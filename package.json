@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "jasmine-node tests",
-    "start": "node app.js"
+    "start": "basicWebServer.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.16.4"
+    "express": "^4.16.4",
+    "joi": "9.0.0-0"
   }
 }
