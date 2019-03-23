@@ -1,17 +1,22 @@
 {
-  "name": "NodeAPI",
+  "name": "slack-api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "jasmine-node tests",
-    "start": "basicWebServer.js"
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "10.15.3"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "config": "^3.0.1",
     "express": "^4.16.4",
-    "joi": "9.0.0-0"
+    "joi": "9.0.0-0",
+    "mongoose": "^5.4.19"
   }
 }
