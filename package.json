@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "pretest": "eslint --ignore-path .gitignore .",
     "test": "jasmine-node tests",
     "start": "node index.js"
   },
@@ -18,5 +19,10 @@
     "express": "^4.16.4",
     "joi": "9.0.0-0",
     "mongoose": "^5.4.19"
+  },
+  "devDependencies": {
+    "eslint": "^5.15.3",
+    "eslint-config-google": "^0.12.0",
+    "eslint-config-strongloop": "^2.1.0"
   }
 }
