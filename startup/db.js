@@ -4,7 +4,7 @@ const config = require('config');
 
 module.exports = function() {
   const db = config.get('db');
-  mongoose.connect(`${db}/hypechat`, {useNewUrlParser: true})
+  mongoose.connect(db.host, db.name, db.port, db.options)
       .then(() => dbLog(`Connected to ${db}`))
       .catch((ex) => dbLog(`An error occured while connecting to ${db}.`, ex));
 };
