@@ -1,14 +1,3 @@
-{ 
-  "db": {
-    "host": "hypechatbdd-yz6dt.mongodb.net",
-    "name": "hypechat",
-    "port": "27017",
-    "options": {
-        "user": "santiagopinto",
-        "pass": "taller21c2019",
-        "auth": {
-            "authdb": "admin"
-        }
-    }
-  }
+{
+  "db": "MONGODB_URI"
 }
