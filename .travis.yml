@@ -1,5 +1,9 @@
 language: node_js
-node_js: "node"
+node_js:
+    - "10.15.3"
 services: mongodb
 before_script:
     - "npm i -g jasmine-node"
+
+script:
+    - "npm run pretest" 
