@@ -1,0 +1,108 @@
+swagger: "2.0"
+info:
+  description: "A simple API to make a resilient chat app for workspaces. Feel free to check our [github repository](https://github.com/taller2fiubafedmanmatsan/AppServer) for more information."
+  version: "1.0.0"
+  title: "Hypechat"
+  contact:
+    email: "llauromanuel@gmail.com"
+host: "app-server-t2.herokuapp.com"
+basePath: "/"
+tags:
+- name: "Users"
+  description: "Operations about users"
+  externalDocs:
+    description: "source code"
+    url: "https://bit.ly/2UaXkUo"
+schemes:
+- "https"
+- "http"
+paths:
+  /:
+    get:
+      tags:
+      - "Healthcheck"
+      summary: "Check if server is still working"
+      description: ""
+      operationId: ""
+      responses:
+        200:
+          description: "It's alive!"
+  /api/users:
+    post:
+      tags:
+      - "Users"
+      summary: "Create user"
+      description: "This can only be done one time per user."
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Creates user object"
+        required: true
+        schema:
+          $ref: "#/definitions/User"
+      responses:
+        200:
+          description: "New user ${name} created"
+          schema:
+            id: "ObjectId"
+        400:
+          description: ""
+  /api/users/{id}:
+    get:
+      tags:
+      - "Users"
+      summary: "Get user by user id"
+      description: ""
+      operationId: ""
+      produces:
+      - "json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id that needs to be fetched. Use 5c99a05240c3d40004bdb06c for testing. "
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserResponse"
+        404:
+          description: "The user by id: ${id} doesn't exists."
+ 
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "api_key"
+    in: "header"
+definitions:
+  User:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      email:
+        type: "string"
+      password:
+        type: "string"
+      nickname:
+        type: "string"
+      isAdmin:
+        type: "boolean"
+  UserResponse:
+    type: "object"
+    properties:
+      _id:
+        type: "string"
+      name:
+        type: "string"
+      email:
+        type: "string"
+      isAdmin:
+        type: "boolean"
+externalDocs:
+  description: "Find out more about Hypechat"
+  url: "https://github.com/taller2fiubafedmanmatsan/AppServer"
