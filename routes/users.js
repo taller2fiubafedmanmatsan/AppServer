@@ -4,7 +4,8 @@ const router = express.Router();
 const {User, validate} = require('../models/user');
 
 router.get('/:id', async (request, response) => {
-  const user = await User.findById(request.params.id).select('-password -__v');
+  const user = await User.findById(request.params.id)
+      .select('-password -__v -_id');
   const msg = `The user by id: ${request.params.id} doesn't exists.`;
   if (!user) return response.status(404).send(msg);
 

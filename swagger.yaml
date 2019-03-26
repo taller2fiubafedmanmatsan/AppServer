@@ -14,7 +14,6 @@ tags:
     description: "source code"
     url: "https://bit.ly/2UaXkUo"
 schemes:
-- "https"
 - "http"
 paths:
   /:
@@ -27,6 +26,9 @@ paths:
       responses:
         200:
           description: "It's alive!"
+          schema:
+            text/plain:
+              type: string
   /api/users:
     post:
       tags:
@@ -82,6 +84,8 @@ definitions:
   User:
     type: "object"
     properties:
+      _id:
+        type: "ObjectId"
       name:
         type: "string"
       email:
@@ -95,8 +99,6 @@ definitions:
   UserResponse:
     type: "object"
     properties:
-      _id:
-        type: "string"
       name:
         type: "string"
       email:
