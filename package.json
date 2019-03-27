@@ -6,7 +6,8 @@
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
     "test": "jasmine-node tests",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test_coverage": "jest --coverage --coverageReporters=text-lcov | coveralls"
   },
   "engines": {
     "node": "10.15.3"
@@ -24,8 +25,10 @@
     "swagger-ui-express": "^4.0.2"
   },
   "devDependencies": {
+    "coveralls": "^3.0.3",
     "eslint": "^5.15.3",
     "eslint-config-google": "^0.12.0",
-    "eslint-config-strongloop": "^2.1.0"
+    "eslint-config-strongloop": "^2.1.0",
+    "jest": "^24.5.0"
   }
 }
