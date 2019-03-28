@@ -40,4 +40,10 @@ router.post('/', async (request, response) => {
       .send(_.pick(user, ['name', 'email']));
 });
 
+router.delete('/', auth, async (request, response) => {
+  const user = await User.findByIdAndDelete(request.user._id);
+
+  response.status(200).send(user);
+});
+
 module.exports = router;
