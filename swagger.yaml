@@ -33,7 +33,7 @@ paths:
     post:
       tags:
       - "Users"
-      summary: "Create user"
+      summary: "Register a new user"
       description: "This can only be done one time per user."
       operationId: ""
       produces:
@@ -48,23 +48,31 @@ paths:
           properties:
             name:
               type: "string"
+              required: true
             email:
               type: "string"
+              required: true
             password:
               type: "string"
+              required: true
             nickname:
               type: "string"
             isAdmin:
               type: "boolean"
       responses:
         200:
-          description: "New user ${name} created"
-          schema:
-            text/plain:
-              type: string
-        400:
           description: ""
-  /api/users/{id}:
+          header: "x-auth-token"
+          schema:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+              email:
+                type: "string"
+        400:
+          description: "User already registered."
+  /api/users/me:
     get:
       tags:
       - "Users"
@@ -73,15 +81,9 @@ paths:
       operationId: ""
       produces:
       - "json"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The id that needs to be fetched. Use 5c99a05240c3d40004bdb06c for testing. "
-        required: true
-        type: "string"
       responses:
         200:
-          description: "successful operation"
+          description: ""
           schema:
             type: "object"
             properties:
@@ -89,10 +91,48 @@ paths:
                 type: "string"
               email:
                 type: "string"
+              nickname:
+                type: "string"
               isAdmin:
                 type: "boolean"
-        404:
-          description: "The user by id: ${id} doesn't exists."
+
+        400:
+          description: "Invalid token."
+        401:
+          description: "Access denied. No token provided."
+  
+  /api/auth/singin:
+    post:
+      tags:
+      - "Authentication"
+      summary: "Sing In with an already registered user"
+      description: ""
+      operationId: ""
+      produces:
+      - "text"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Sing in a user"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            email:
+              type: "string"
+              required: true
+            password:
+              type: "string"
+              required: true
+      responses:
+        200:
+          description: ""
+          schema:
+            type: "string"
+
+        400:
+          description: "Bad request. or Invalid email or password."
+
 securityDefinitions:
   api_key:
     type: "apiKey"
