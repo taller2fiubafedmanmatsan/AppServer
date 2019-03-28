@@ -1,3 +1,4 @@
 {
-  "db": "MONGODB_URI"
+  "db": "MONGODB_URI",
+  "jwt_key": "jwt_private_key"
 }
