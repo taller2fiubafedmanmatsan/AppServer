@@ -12,9 +12,10 @@ const userSchema = mongoose.Schema({
     require: true,
     unique: true
   },
-  nickname: {type: String, minlenght: 1, maxlenght: 50, require: true},
+  nickname: {type: String, minlenght: 1, maxlenght: 50},
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
-  isAdmin: Boolean
+  isAdmin: Boolean,
+  photo_url: String
 });
 
 userSchema.methods.getAuthToken = function() {
@@ -32,7 +33,8 @@ function validateUser(user) {
     email: Joi.string().min(3).max(50).required().email(),
     nickname: Joi.string().min(1).max(50),
     password: Joi.string().min(6).max(255).required(),
-    isAdmin: Joi.bool()
+    isAdmin: Joi.bool(),
+    photo_url: Joi.string()
   };
 
   return Joi.validate(user, schema);
