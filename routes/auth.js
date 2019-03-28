@@ -16,7 +16,7 @@ router.post('/singin', async (req, res) => {
   if (!validPassword) return res.status(400).send('Invalid email or password.');
 
   if (user.facebook_log != req.body.facebook_log) {
-    return res.status(400).send('Invalid email or password.');
+    return res.status(400).send('User already registered.');
   }
 
   const token = user.getAuthToken();
