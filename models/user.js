@@ -15,11 +15,12 @@ const userSchema = mongoose.Schema({
   nickname: {type: String, minlenght: 1, maxlenght: 50},
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
   isAdmin: Boolean,
-  photo_url: String
+  photo_url: String,
+  facebook_log: {type: Boolean, require: true}
 });
 
 userSchema.methods.getAuthToken = function() {
-  return jwt.sign({_id: this._id, name: this.name, isAdmin: this.isAdmin},
+  return jwt.sign({_id: this._id},
       config.get('jwt_key'),
       {expiresIn: 86400} // expires in 24 hours
   );
@@ -29,12 +30,13 @@ const User = mongoose.model('User', userSchema);
 
 function validateUser(user) {
   const schema = {
-    name: Joi.string().min(1).max(50).required(),
-    email: Joi.string().min(3).max(50).required().email(),
-    nickname: Joi.string().min(1).max(50),
+    name: Joi.string().min(1).max(50).trim().required(),
+    email: Joi.string().min(3).max(50).trim().required().email(),
+    nickname: Joi.string().min(1).max(50).trim(),
     password: Joi.string().min(6).max(255).required(),
     isAdmin: Joi.bool(),
-    photo_url: Joi.string()
+    photo_url: Joi.string().trim().uri(),
+    facebook_log: Joi.bool().required()
   };
 
   return Joi.validate(user, schema);

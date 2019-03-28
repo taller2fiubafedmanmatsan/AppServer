@@ -26,8 +26,11 @@ router.post('/', async (request, response) => {
   const salt = await bcrypt.genSalt(10);
   request.body.password = await bcrypt.hash(password, salt);
   user = new User(_.pick(request.body,
-      ['name', 'email', 'nickname', 'password', 'isAdmin', 'photo_url'])
-  );
+      [
+        'name', 'email', 'nickname', 'password', 'isAdmin', 'photo_url',
+        'facebook_log'
+      ]
+  ));
 
   await user.save();
 
