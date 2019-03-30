@@ -5,7 +5,7 @@ const {User} = require('../models/user');
 
 const router = express.Router();
 
-router.post('/singin', async (req, res) => {
+router.post('/signin', async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send('Bad request.');
 
@@ -35,4 +35,3 @@ function validate(user) {
 };
 
 module.exports = router;
-
