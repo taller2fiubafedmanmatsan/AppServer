@@ -41,7 +41,7 @@ router.post('/', async (request, response) => {
 });
 
 router.put('/me', auth, async (request, response) => {
-  const {error} = validate_update(request.body);
+  const {error} = validateUpdate(request.body);
   if (error) return response.status(400).send(error.details[0].message);
   const user = await User.findById(request.user._id);
 
