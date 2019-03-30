@@ -54,4 +54,4 @@ function validateUpdate(requestBody) {
 
 exports.User = User;
 exports.validate = validateUser;
-exports.validate_update = validateUpdate;
+exports.validateUpdate = validateUpdate;
