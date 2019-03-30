@@ -43,14 +43,17 @@ router.post('/', async (request, response) => {
 router.put('/me', auth, async (request, response) => {
   const {error} = validateUpdate(request.body);
   if (error) return response.status(400).send(error.details[0].message);
-  const user = await User.findById(request.user._id);
 
   if (request.body.password) {
     const salt = await bcrypt.genSalt(10);
     request.body.password = await bcrypt.hash(request.body.password, salt);
   };
 
-  await User.findByIdAndUpdate(user._id, request.body);
+  const user = await User.findByIdAndUpdate(user._id, _.pick(request.body,
+      [
+        'nickname', 'password', 'photo_url'
+      ]
+  ));
 
   response.status(200).send(_.pick(user, ['name', 'email']));
 });
