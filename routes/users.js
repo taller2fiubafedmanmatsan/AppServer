@@ -56,11 +56,12 @@ router.put('/me', auth, async (request, response) => {
     request.body.password = await bcrypt.hash(request.body.password, salt);
   };
 
-  user = await User.findByIdAndUpdate(request.user._id, _.pick(request.body,
-      [
-        'nickname', 'password', 'photo_url'
-      ]
-  ));
+  const user = await User.findByIdAndUpdate(request.user._id,
+      _.pick(request.body,
+          [
+            'nickname', 'password', 'photo_url'
+          ]
+      ));
 
   response.status(200).send(_.pick(user, ['name', 'email']));
 });
