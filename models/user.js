@@ -52,6 +52,14 @@ function validateUpdate(requestBody) {
   return Joi.validate(requestBody, schema);
 }
 
+function validatePasswordRestore(requestBody) {
+  const schema = {
+    email: Joi.string().min(3).max(50).trim().required().email()
+  };
+  return Joi.validate(requestBody, schema);
+}
+
 exports.User = User;
 exports.validate = validateUser;
 exports.validateUpdate = validateUpdate;
+exports.validatePasswordRestore = validatePasswordRestore;
