@@ -22,6 +22,8 @@
     "joi": "9.0.0-0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.4.19",
+    "nodemailer": "^6.0.0",
+    "randomstring": "^1.1.5",
     "read-yaml": "^1.1.0",
     "swagger-ui-express": "^4.0.2"
   },
