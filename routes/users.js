@@ -54,7 +54,7 @@ router.put('/me', auth, async (request, response) => {
           [
             'nickname', 'password', 'photo_url'
           ]
-));
+      ));
 
   response.status(200).send(_.pick(user, ['name', 'email']));
 });
