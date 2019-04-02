@@ -67,7 +67,7 @@ router.put('/me', auth, async (request, response) => {
 });
 
 router.post('/restorepassword', async (request, response) => {
-  const {error} = validatePasswordRestore(request.body);
+  let {error} = validatePasswordRestore(request.body);
   if (error) return response.status(400).send(error.details[0].message);
 
   const email = request.body.email;
@@ -78,12 +78,14 @@ router.post('/restorepassword', async (request, response) => {
   const newPassword = randomstring.generate(10);
   const salt = await bcrypt.genSalt(10);
   request.body.password = await bcrypt.hash(newPassword, salt);
-  await User.findByIdAndUpdate(user._id, _.pick(request.body,
-      [
-        'password'
-      ]
-  ));
-  mailer.sendMail(request, response, newPassword);
+  error = mailer.sendMail(request, response, newPassword);
+  if (error) {
+    return response.send(500, error.message);
+  } else {
+    user.password = request.body.password;
+    await user.save();
+    response.status(200).send('New password sent to ' + request.body.email);
+  }
 });
 
 module.exports = router;

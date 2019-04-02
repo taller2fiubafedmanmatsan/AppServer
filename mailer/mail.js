@@ -22,14 +22,8 @@ function sendMail(request, response, newPassword) {
     text: mailText + newPassword
   };
 
-
   transporter.sendMail(mailOptions, function(error, info) {
-    if (error) {
-      console.log(error);
-      response.send(500, error.message);
-    } else {
-      response.status(200).send('New password sent to ' + request.body.email);
-    }
+    return error;
   });
 };
 
