@@ -100,7 +100,78 @@ paths:
           description: "Invalid token."
         401:
           description: "Access denied. No token provided."
-  
+    put:
+      tags:
+      - "Users"
+      summary: "Allows the user to change some profile fields"
+      description: "Users may only modify their password, nickname or profile picture"
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Creates user object"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            nickname:
+              type: "string"
+              required: false
+            password:
+              type: "string"
+              required: false
+            photo_url:
+              type: "string"
+              required: false
+      responses:
+        200:
+          description: ""
+          schema:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+              email:
+                type: "string"
+        400:
+          description: "name/email/facebook_log/isAdmin is not allowed."
+          
+  /api/users/restorepassword:
+    post:
+      tags:
+      - "Users"
+      summary: "Sends an email containing a new password for the user"
+      description: ""
+      operationId: ""
+      produces:
+       - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Creates user object"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            email:
+              type: "string"
+              required: true
+      responses:
+        200:
+          description: "New password sent to <user email>"
+          parameters:
+            type: "object"
+            email:
+                type: "string"
+                required: true
+
+        400:
+          description: "Invalid email."
+        500:
+          description: "Internal server error"
+          
   /api/auth/singin:
     post:
       tags:
