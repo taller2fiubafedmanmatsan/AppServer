@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 const router = express.Router();
-const auth = require('../middelware/auth');
+const auth = require('../middleware/auth');
 const mailer = require('../mailer/password_restoration_mail');
 const randomstring = require('randomstring');
 
