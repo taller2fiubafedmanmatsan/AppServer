@@ -1,0 +1,5 @@
+{
+  "db": "mongodb://localhost/hypechat-test",
+  "jwt_key": "jwt_private_key",
+  "mail_service_pwd":"mail_service_pwd"
+}
