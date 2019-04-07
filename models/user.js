@@ -36,7 +36,7 @@ function validateUser(user) {
     password: Joi.string().min(6).max(255).required(),
     isAdmin: Joi.bool(),
     photo_url: Joi.string().trim().uri(),
-    facebook_log: Joi.bool().required()
+    facebook_log: Joi.bool()
   };
 
   return Joi.validate(user, schema);
