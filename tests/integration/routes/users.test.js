@@ -191,14 +191,14 @@ describe('PUT /me', ()=> {
     expect(response.status).toBe(400);
   });
 
-  it('should return 400 if user attempts to its admin status', async ()=> {
+  it('should return 400 if user tries to change its admin status', async ()=> {
     const isAdmin = true;
     req = {isAdmin};
     const response = await execute(req);
     expect(response.status).toBe(400);
   });
 
-  it('should return 400 if user attempts to its facebook log ', async ()=> {
+  it('should return 400 if user tries to change its facebook log ', async ()=> {
     const facebookLog = true;
     req = {facebookLog};
     const response = await execute(req);
