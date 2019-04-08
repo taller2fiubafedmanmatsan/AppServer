@@ -15,6 +15,7 @@
     "rules": {
         "require-jsdoc" : 0,
         "new-cap": ["error", { "properties": false }],
-        "comma-dangle": ["error", "never"]
+        "comma-dangle": ["error", "never"],
+        "brace-style": 0
     }
 }
