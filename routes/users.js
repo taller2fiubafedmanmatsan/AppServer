@@ -34,7 +34,7 @@ router.post('/', async (request, response) => {
   request.body.password = await bcrypt.hash(password, salt);
   user = new User(_.pick(request.body,
       [
-        'name', 'email', 'nickname', 'password', 'isAdmin', 'photo_url',
+        'name', 'email', 'nickname', 'password', 'isAdmin', 'photoUrl',
         'facebook_log'
       ]
   ));
@@ -59,7 +59,7 @@ router.put('/me', auth, async (request, response) => {
   const user = await User.findByIdAndUpdate(request.user._id,
       _.pick(request.body,
           [
-            'nickname', 'password', 'photo_url'
+            'nickname', 'password', 'photoUrl'
           ]
       ));
 
