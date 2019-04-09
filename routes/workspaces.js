@@ -1,5 +1,6 @@
 const express = require('express');
 const auth = require('../middleware/auth');
+const usersExist = require('../middleware/existing_users');
 const {Workspace, validate} = require('../models/workspace');
 const router = express.Router();
 
@@ -7,7 +8,7 @@ router.get('/', async (request, response) => {
   response.status(200).send(`It's alive!`);
 });
 
-router.post('/', auth, async (request, response) => {
+router.post('/', [auth, usersExist], async (request, response) => {
   const {error} = validate(request.body);
   if (error) return response.status(400).send(error.details[0].message);
 
