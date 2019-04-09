@@ -1,29 +1,27 @@
 const _ = require('lodash');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const {User} = require('../models/user');
 
-async function validUser(usersId) {
-  return await User.find({email: {$in: usersId}});
+async function validUserEmails(email) {
+  return await User.find({email: {$in: email}});
 };
 
-function addUser(usersId, userEmail) {
-  usersId.push(userEmail);
+async function validCreator(emails) {
+  return await User.find({email: emails.creator});
 };
 
-function addUsers(usersId, usersArray) {
-  usersArray.forEach(function(userEmail) {
-    usersId.push(mongoose.Types.ObjectId(userEmail));
-  });
-  
+function validUsers(emails) {
+  return validUserEmails(emails.users);
+};
+
+function validAdmins(emails) {
+  return validUserEmails(emails.admins);
 };
 
 module.exports = function(req, res, next) {
-  const userArrays = _.pick(req.body, ['creator', 'users', 'admins']);
-  if (!userArrays) next();
-  console.log(userArrays);
+  const emails = _.pick(req.body, ['creator', 'users', 'admins']);
+  if (!emails) next();
+  if (validCreator(emails) && validUsers(emails) && validAdmins(emails)) next();
 
-  userArrays.forEach(function(users) {
-    Array.isArray(users) ? addUsers(usersId, users) : addUser(usersId, users);
-  });
-
+  return res.status(400, 'Invalid users.');
 };
