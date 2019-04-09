@@ -11,17 +11,19 @@ async function validCreator(emails) {
 };
 
 function validUsers(emails) {
-  return validUserEmails(emails.users);
+  return validUserEmails(emails.users).length === emails.users.length;
 };
 
 function validAdmins(emails) {
-  return validUserEmails(emails.admins);
+  return validUserEmails(emails.admins).length === emails.users.length;
 };
 
 module.exports = function(req, res, next) {
   const emails = _.pick(req.body, ['creator', 'users', 'admins']);
   if (!emails) next();
-  if (validCreator(emails) && validUsers(emails) && validAdmins(emails)) next();
+  if (validCreator(emails) && validUsers(emails) && validAdmins(emails)) {
+    next();
+  }
 
-  return res.status(400, 'Invalid users.');
+  return res.status(404).send('Invalid users.');
 };
