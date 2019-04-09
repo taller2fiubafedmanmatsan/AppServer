@@ -3,7 +3,7 @@ const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
 
 const messageSchema = mongoose.Schema({
-  user: {
+  creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     require: true
@@ -16,7 +16,7 @@ const Message = mongoose.model('Message', messageSchema);
 
 function validateMessage(message) {
   const schema = {
-    user: Joi.objectId().required(),
+    creator: Joi.objectId().required(),
     text: Joi.string().min(1).required()
   };
   Joi.validate(message, schema);

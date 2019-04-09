@@ -35,7 +35,7 @@ function validateWorkspace(workspace) {
     creator: Joi.objectId().required(),
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250),
-    channels: Joi.array().items(Joi.objectId()).required(),
+    channels: Joi.array().items(Joi.objectId()),
     users: Joi.array().items(Joi.objectId()).required(),
     admins: Joi.array().items(Joi.objectId()).required()
   };
@@ -43,4 +43,4 @@ function validateWorkspace(workspace) {
 };
 
 exports.Workspace = Workspace;
-exports.validateWorkspace = validateWorkspace;
+exports.validate = validateWorkspace;
