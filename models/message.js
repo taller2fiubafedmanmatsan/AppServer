@@ -19,7 +19,7 @@ function validateMessage(message) {
     creator: Joi.objectId().required(),
     text: Joi.string().min(1).required()
   };
-  Joi.validate(message, schema);
+  return Joi.validate(message, schema);
 };
 
 exports.Message = Message;
