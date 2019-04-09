@@ -32,14 +32,15 @@ function validateWorkspace(workspace) {
     name: Joi.string().trim().min(1).max(250).required(),
     imageUrl: Joi.string().trim().uri(),
     location: Joi.string(),
-    creator: Joi.objectId().required(),
+    creator: Joi.string().trim().email().required(),
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250),
-    channels: Joi.array().items(Joi.objectId()),
-    users: Joi.array().items(Joi.objectId()).required(),
-    admins: Joi.array().items(Joi.objectId()).required()
+    channels: Joi.array().items(Joi.string().trim()).required(),
+    users: Joi.array().items(Joi.string().trim().email()).required(),
+    admins: Joi.array().items(Joi.string().trim().email()).required()
   };
-  Joi.validate(workspace, schema);
+
+  return Joi.validate(workspace, schema);
 };
 
 exports.Workspace = Workspace;
