@@ -7,15 +7,21 @@ async function validUserEmails(email) {
 };
 
 async function validCreator(emails) {
-  return await User.find({email: emails.creator});
+  emails.creator = await User.find({email: emails.creator});
+
+  return emails.creator;
 };
 
 function validUsers(emails) {
-  return validUserEmails(emails.users).length === emails.users.length;
+  const length = emails.users.length;
+  emails.users = validUserEmails(emails.users);
+  return length === emails.users.length;
 };
 
 function validAdmins(emails) {
-  return validUserEmails(emails.admins).length === emails.users.length;
+  const length = emails.users.length;
+  emails.users = validUserEmails(emails.users);
+  return length === emails.admins.length;
 };
 
 module.exports = function(req, res, next) {
