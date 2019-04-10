@@ -28,7 +28,6 @@ describe('existing_users middleware', ()=> {
     beforeEach(async ()=> {
       await createUser(data1.name, data1.email, data1.pass);
       await createUser(data2.name, data2.email, data2.pass);
-      // await createUser(data3.name, data3.email, data3.pass);
 
       user = await User.findOne({name: 'test'});
       token = user.getAuthToken();
@@ -36,7 +35,7 @@ describe('existing_users middleware', ()=> {
 
     const body = {
       creator: data1.email,
-      users: [data1.email, data2.email, data3.email],
+      users: [data1.email, data2.email],
       admins: [data1.email, data2.email, data3.email]
     };
 
