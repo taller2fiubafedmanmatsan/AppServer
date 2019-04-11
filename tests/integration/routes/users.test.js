@@ -270,10 +270,8 @@ describe('PUT /me', ()=> {
 
 describe('POST /restorepassword', ()=> {
   let email;
-  const newPass = 'dsaidosq48Hgs';
 
   const execute = ()=> {
-    mailer.sendMail(email, newPass);
     return request(server)
         .post('/api/users/restorepassword')
         .send({email});
