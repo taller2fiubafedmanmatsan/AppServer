@@ -38,7 +38,6 @@ router.post('/', async (request, response) => {
         'facebook_log'
       ]
   ));
-
   await user.save();
 
   const token = user.getAuthToken();
@@ -61,9 +60,9 @@ router.put('/me', auth, async (request, response) => {
           [
             'nickname', 'password', 'photoUrl'
           ]
-      ));
+      ), {new: true});
 
-  response.status(200).send(_.pick(user, ['name', 'email']));
+  response.status(200).send(_.pick(user, ['name', 'email', 'nickname']));
 });
 
 router.post('/restorepassword', async (request, response) => {
