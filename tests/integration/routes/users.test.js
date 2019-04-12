@@ -263,7 +263,7 @@ describe('PUT /me', ()=> {
     const response = await execute();
     expect(response.status).toBe(200);
     expect(Object.keys(response.body)).toEqual(
-        expect.arrayContaining(['name', 'email', 'nickname'])
+        expect.arrayContaining(['name', 'email', 'nickname', 'photoUrl'])
     );
   });
 });

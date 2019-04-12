@@ -62,7 +62,11 @@ router.put('/me', auth, async (request, response) => {
           ]
       ), {new: true});
 
-  response.status(200).send(_.pick(user, ['name', 'email', 'nickname']));
+  response.status(200).send(_.pick(user,
+      [
+        'name', 'email', 'nickname', 'photoUrl'
+      ]
+  ));
 });
 
 router.post('/restorepassword', async (request, response) => {
