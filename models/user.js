@@ -15,7 +15,7 @@ const userSchema = mongoose.Schema({
   nickname: {type: String, minlenght: 1, maxlenght: 50},
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
   isAdmin: Boolean,
-  photo_url: String,
+  photoUrl: String,
   facebook_log: {type: Boolean, require: true}
 });
 
@@ -35,7 +35,7 @@ function validateUser(user) {
     nickname: Joi.string().min(1).max(50).trim(),
     password: Joi.string().min(6).max(255).required(),
     isAdmin: Joi.bool(),
-    photo_url: Joi.string().trim().uri(),
+    photoUrl: Joi.string().trim().uri(),
     facebook_log: Joi.bool()
   };
 
@@ -46,7 +46,7 @@ function validateUpdate(requestBody) {
   const schema = {
     nickname: Joi.string().min(1).max(50).trim(),
     password: Joi.string().min(6).max(255),
-    photo_url: Joi.string().trim().uri()
+    photoUrl: Joi.string().trim().uri()
   };
 
   return Joi.validate(requestBody, schema);
