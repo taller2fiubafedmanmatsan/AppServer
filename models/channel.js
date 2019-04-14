@@ -26,7 +26,7 @@ const Channel = mongoose.model('Channel', channelSchema);
 
 function validateChannel(channel) {
   const schema = {
-    name: Joi.string().min(1),
+    name: Joi.string().min(1).max(50),
     pages: Joi.array().items(Joi.objectId()).required(),
     users: Joi.array().items(Joi.objectId()).required(),
     creator: Joi.objectId().required(),

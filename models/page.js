@@ -13,7 +13,7 @@ const Page = mongoose.model('Page', pageSchema);
 function validatePage(page) {
   const schema = {
     messages: Joi.array().items(Joi.objectId()).required(),
-    number: Joi.number().required()
+    number: Joi.number().max(50).required()
   };
   Joi.validate(page, schema);
 };
