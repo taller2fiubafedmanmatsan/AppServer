@@ -184,7 +184,6 @@ describe('/api/users', ()=> {
           .post('/api/users')
           .send(req);
       user = await User.findOne({name});
-      console.log(user);
       token = user.getAuthToken();
 
       nickname = 'generic nick';
