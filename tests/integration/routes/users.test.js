@@ -19,6 +19,7 @@ describe('/api/users', ()=> {
     let name;
     let email;
     let password;
+    let token;
 
     const execute = ()=> {
       return request(server)
@@ -51,259 +52,262 @@ describe('/api/users', ()=> {
       expect(response.body.email).toBe(email);
     });
   });
-});
 
-describe('POST /', ()=> {
-  let name;
-  let email;
-  let password;
+  describe('POST /', ()=> {
+    let name;
+    let email;
+    let password;
 
-  const execute = ()=> {
-    return request(server)
-        .post('/api/users')
-        .send({name, email, password});
-  };
+    const execute = ()=> {
+      return request(server)
+          .post('/api/users')
+          .send({name, email, password});
+    };
 
-  beforeEach(async ()=> {
-    name = 'name';
-    email = 'user@test.com';
-    password = 'password';
-    await User.remove({});
+    beforeEach(async ()=> {
+      name = 'name';
+      email = 'user@test.com';
+      password = 'password';
+      await User.remove({});
+    });
+
+    it('should return 400 if user name is missing', async ()=> {
+      name = null;
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user name is less than 1 characters', async ()=> {
+      name = '';
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user name is more than 50 characters', async ()=> {
+      name = new Array(52).join('a');
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user email is missing', async ()=> {
+      email = null;
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if email is less than 5 characters', async ()=> {
+      email = 'abc';
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if email is more than 50 characters', async ()=> {
+      email = new Array(52).join('a');
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user email is not a valid email', async ()=> {
+      email = 'abcdefg';
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user password is missing', async ()=> {
+      password = null;
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if password is less than 6 characters', async ()=> {
+      password = 'abcde';
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if password is more than 255 characters', async ()=> {
+      password = new Array(257).join('a');
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if the user is already registered', async ()=> {
+      await execute();
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return new user if request is valid', async ()=> {
+      const response = await execute();
+
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'email'])
+      );
+    });
   });
 
-  it('should return 400 if user name is missing', async ()=> {
-    name = null;
-    const response = await execute();
+  describe('PUT /me', ()=> {
+    let password;
+    let email;
+    let name;
+    let nickname;
+    let photoUrl;
+    let token;
+    let req;
+    let user;
 
-    expect(response.status).toBe(400);
+    const execute = ()=> {
+      return request(server)
+          .put('/api/users/me')
+          .set('x-auth-token', token)
+          .send(req);
+    };
+
+    beforeEach(async ()=> {
+      name = 'name';
+      email = 'test@test.com';
+      password = 'password';
+      req = {name, email, password, nickname};
+      await request(server)
+          .post('/api/users')
+          .send(req);
+      user = await User.findOne({name});
+      console.log(user);
+      token = user.getAuthToken();
+
+      nickname = 'generic nick';
+      password = 'newpassword';
+      photoUrl = 'https://images.app.goo.gl/E9muMqm8TCqtHpA5A';
+      req = {nickname, password, photoUrl};
+    });
+
+    it('should return 400 if user attempts to change its email', async ()=> {
+      email = 'newmail@genericdomain.com';
+      req = {email};
+      const response = await execute();
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user tries to change its admin status',
+        async ()=> {
+          const isAdmin = true;
+          req = {isAdmin};
+          const response = await execute();
+          expect(response.status).toBe(400);
+        });
+
+    it('should return 400 if user tries to change its facebook log ',
+        async ()=> {
+          const facebookLog = true;
+          req = {facebookLog};
+          const response = await execute();
+          expect(response.status).toBe(400);
+        });
+
+    it('should return 400 if user attempts to change its name', async ()=> {
+      const name = 'new name';
+      req = {name};
+      const response = await execute();
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if nickname is less than 1 character', async ()=> {
+      const nickname = '';
+      req = {nickname};
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if nickname is more than 50 characters', async ()=> {
+      const nickname = new Array(52).join('a');
+      req = {nickname};
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if password is less than 6 characters', async ()=> {
+      const password = '12345';
+      req = {password};
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if password is more than 255 characters', async ()=> {
+      const password = new Array(257).join('a');
+      req = {password};
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if photoUrl is not a valid URL', async ()=> {
+      photoUrl = 'invalidUrl';
+      req = {photoUrl};
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return user if request is valid', async ()=> {
+      const response = await execute();
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'email', 'nickname', 'photoUrl'])
+      );
+    });
   });
 
-  it('should return 400 if user name is less than 1 characters', async ()=> {
-    name = '';
-    const response = await execute();
+  describe('POST /restorepassword', ()=> {
+    let email;
 
-    expect(response.status).toBe(400);
-  });
+    const execute = ()=> {
+      return request(server)
+          .post('/api/users/restorepassword')
+          .send({email});
+    };
 
-  it('should return 400 if user name is more than 50 characters', async ()=> {
-    name = new Array(52).join('a');
-    const response = await execute();
+    beforeEach(async ()=> {
+      const name = 'name';
+      const password = 'password';
+      email = 'hypechat.team@gmail.com';
+      await request(server)
+          .post('/api/users')
+          .send({name, email, password});
+    });
 
-    expect(response.status).toBe(400);
-  });
+    it('should return 400 if user email is missing', async ()=> {
+      email = null;
+      const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-  it('should return 400 if user email is missing', async ()=> {
-    email = null;
-    const response = await execute();
+    it('should return 400 if user email is not registered', async ()=> {
+      email = 'unregisteredmail@genericDomain.com';
+      const response = await execute();
 
-    expect(response.status).toBe(400);
-  });
+      expect(response.status).toBe(400);
+    });
 
-  it('should return 400 if email is less than 5 characters', async ()=> {
-    email = 'abc';
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if email is more than 50 characters', async ()=> {
-    email = new Array(52).join('a');
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if user email is not a valid email', async ()=> {
-    email = 'abcdefg';
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if user password is missing', async ()=> {
-    password = null;
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if password is less than 6 characters', async ()=> {
-    password = 'abcde';
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if password is more than 255 characters', async ()=> {
-    password = new Array(257).join('a');
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if the user is already registered', async ()=> {
-    await execute();
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return new user if request is valid', async ()=> {
-    const response = await execute();
-
-    expect(response.status).toBe(200);
-    expect(Object.keys(response.body)).toEqual(
-        expect.arrayContaining(['name', 'email'])
-    );
-  });
-});
-
-describe('PUT /me', ()=> {
-  let password;
-  let email;
-  let name;
-  let nickname;
-  let photoUrl;
-  let token;
-  let req;
-
-  const execute = ()=> {
-    return request(server)
-        .put('/api/users/me')
-        .set('x-auth-token', token)
-        .send(req);
-  };
-
-  beforeEach(async ()=> {
-    name = 'name';
-    email = 'test@test.com';
-    password = 'password';
-    req = {name, email, password, nickname};
-    await request(server)
-        .post('/api/users')
-        .send(req);
-    user = await User.findOne({name});
-    token = user.getAuthToken();
-
-    nickname = 'generic nick';
-    password = 'newpassword';
-    photoUrl = 'https://images.app.goo.gl/E9muMqm8TCqtHpA5A';
-    req = {nickname, password, photoUrl};
-  });
-
-  it('should return 400 if user attempts to change its email', async ()=> {
-    email = 'newmail@genericdomain.com';
-    req = {email};
-    const response = await execute();
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if user tries to change its admin status', async ()=> {
-    const isAdmin = true;
-    req = {isAdmin};
-    const response = await execute();
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if user tries to change its facebook log ', async ()=> {
-    const facebookLog = true;
-    req = {facebookLog};
-    const response = await execute();
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if user attempts to change its name', async ()=> {
-    name = 'new name';
-    req = {name};
-    const response = await execute();
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if nickname is less than 1 character', async ()=> {
-    nickname = '';
-    req = {nickname};
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if nickname is more than 50 characters', async ()=> {
-    nickname = new Array(52).join('a');
-    req = {nickname};
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if password is less than 6 characters', async ()=> {
-    password = '12345';
-    req = {password};
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if password is more than 255 characters', async ()=> {
-    password = new Array(257).join('a');
-    req = {password};
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 400 if photoUrl is not a valid URL', async ()=> {
-    photoUrl = 'invalidUrl';
-    req = {photoUrl};
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return user if request is valid', async ()=> {
-    const response = await execute();
-    expect(response.status).toBe(200);
-    expect(Object.keys(response.body)).toEqual(
-        expect.arrayContaining(['name', 'email', 'nickname', 'photoUrl'])
-    );
-  });
-});
-
-describe('POST /restorepassword', ()=> {
-  let email;
-
-  const execute = ()=> {
-    return request(server)
-        .post('/api/users/restorepassword')
-        .send({email});
-  };
-
-  beforeEach(async ()=> {
-    const name = 'name';
-    const password = 'password';
-    email = 'hypechat.team@gmail.com';
-    await request(server)
-        .post('/api/users')
-        .send({name, email, password});
-  });
-
-  it('should return 400 if user email is missing', async ()=> {
-    email = null;
-    const response = await execute();
-    expect(response.status).toBe(400);
-  });
-
-
-  it('should return 400 if user email is not registered', async ()=> {
-    email = 'unregisteredmail@genericDomain.com';
-    const response = await execute();
-
-    expect(response.status).toBe(400);
-  });
-
-  it('should return 200 if request is valid', async ()=> {
-    mailer.sendMail = jest.fn();
-    const response = await execute();
-    expect(response.status).toBe(200);
-    expect(mailer.sendMail).toHaveBeenCalled();
+    it('should return 200 if request is valid', async ()=> {
+      mailer.sendMail = jest.fn();
+      const response = await execute();
+      expect(response.status).toBe(200);
+      expect(mailer.sendMail).toHaveBeenCalled();
+    });
   });
 });
