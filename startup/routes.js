@@ -1,5 +1,7 @@
 const express = require('express');
 const users = require('../routes/users');
+const workspaces = require('../routes/workspaces');
+const channels = require('../routes/channels');
 const rootFile = require('../routes/root');
 const auth = require('../routes/auth');
 const error = require('../middleware/error');
@@ -13,5 +15,7 @@ module.exports = function(app) {
   app.use('/', rootFile);
   app.use('/api/users', users);
   app.use('/api/auth', auth);
+  app.use('/api/workspaces', workspaces);
+  app.use('/api/workspaces/channels', channels);
   app.use(error);
 };

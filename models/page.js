@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
-const messageSchema = require('../models/message');
+const messageSchema = require('./message').messageSchema;
 
 const pageSchema = mongoose.Schema({
   messages: [messageSchema],
@@ -15,7 +15,7 @@ function validatePage(page) {
     messages: Joi.array().items(Joi.objectId()).required(),
     number: Joi.number().max(50).required()
   };
-  Joi.validate(page, schema);
+  return Joi.validate(page, schema);
 };
 
 exports.Page = Page;
