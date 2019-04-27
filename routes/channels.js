@@ -1,10 +1,11 @@
-const Transaction = require('mongoose-transactions');
 const express = require('express');
-const router = express.Router();
-const auth = require('../middleware/auth');
+const Transaction = require('mongoose-transactions');
 const _ = require('lodash');
+const auth = require('../middleware/auth');
 const usersExist = require('../middleware/existing_users');
 const {Workspace} = require('../models/workspace');
+
+const router = express.Router();
 
 const {
   Channel,
@@ -12,8 +13,8 @@ const {
   validateChannelUpdate
 } = require('../models/channel');
 
-router.get('/', auth, async (request, response) => {
-  const channelId = request.query.channelId;
+router.get('/:channelId', auth, async (request, response) => {
+  const channelId = request.params.channelId;
   const channel = await Channel.findById(channelId).
       populate({path: 'pages',
         populate: {path: 'pages.messages', model: 'Message'}});
@@ -21,8 +22,8 @@ router.get('/', auth, async (request, response) => {
   if (!channel) return response.status(404).send('Invalid channel.');
 
   if (!channel.users.some((userId) => userId == request.user._id)) {
-    return response.status(403).send('The user cannot see messages' +
-                                      ' from this channel');
+    const msg = 'The user cannot see messages from this channel';
+    return response.status(403).send(msg);
   }
 
   const messages = [];
@@ -36,9 +37,9 @@ router.get('/', auth, async (request, response) => {
 
 router.post('/', [auth, usersExist], async (request, response) => {
   const fields = [
-    'name', 'users', 'isPrivate',
-    'description', 'welcomeMessage'
+    'name', 'users', 'isPrivate', 'description', 'welcomeMessage'
   ];
+
   const {error} = validateChannel(_.pick(request.body, fields));
   if (error) return response.status(400).send(error.details[0].message);
 
