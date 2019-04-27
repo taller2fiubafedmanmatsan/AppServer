@@ -6,7 +6,8 @@ const _ = require('lodash');
 const router = express.Router();
 
 router.get('/:wsname', auth, async (request, response) => {
-  const workspace = await Workspace.findOne({name: params.wsname});
+  console.log(request.params.wsname);
+  const workspace = await Workspace.findOne({name: request.params.wsname});
   if (!workspace) return response.status(404).send('Workspace not found.');
 
   response.status(200).send(_.pick(workspace, [
@@ -33,6 +34,8 @@ router.post('/', [auth, usersExist], async (request, response) => {
         'welcomeMessage', 'channels', 'users', 'admins'
       ]
   ));
+
+  await workspace.save();
 
   response.status(200).send(_.pick(workspace, [
     'name', 'imageUrl', 'location', 'creator', 'description',

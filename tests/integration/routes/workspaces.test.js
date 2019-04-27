@@ -27,6 +27,47 @@ describe('/api/workspaces', ()=> {
     await server.close();
   });
 
+  describe('GET /:wsname', () => {
+    const name = 'WSname';
+    const creator = userEmail;
+    const users = [userEmail];
+    const admins = [userEmail];
+    const description = 'a';
+    const welcomeMessage = 'a';
+
+    beforeAll(async ()=> {
+      await request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, admins,
+            description, welcomeMessage
+          });
+    });
+
+    afterAll(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = ()=> {
+      return request(server)
+          .get('/api/workspaces/' + name)
+          .set('x-auth-token', token);
+    };
+
+    it('should return the asked workspace', async () => {
+      const response = await execute();
+
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            'name', 'creator', 'description',
+            'welcomeMessage', 'channels', 'users', 'admins'
+          ])
+      );
+    });
+  });
+
   describe('POST /', ()=> {
     let name;
     let creator;
