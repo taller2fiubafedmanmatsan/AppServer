@@ -4,13 +4,12 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const _ = require('lodash');
 const {Channel} = require('../models/channel');
-const {Page} = require('../models/page');
+const {Page, isFull} = require('../models/page');
 const {
   Message,
   validateMessage,
   validateMessageUpdate
 } = require('../models/message');
-const MAX_MSG = 50;
 
 router.post('/', auth, async (request, response) => {
   const fields = ['text'];
@@ -31,7 +30,7 @@ router.post('/', auth, async (request, response) => {
   message.user = request.user._id;
   // Veo en que pagina va el mensaje, sino hay lugar en la ultima, creo otra.
   let page = channel.pages[channel.pages.length - 1];
-  if (!page || page.messages.length >= MAX_MSG) {
+  if (!page || isFull(page)) {
     page = new Page({number: channel.pages.length});
     channel.pages.push(page._id);
   }
@@ -74,7 +73,7 @@ async function finishedCreationTransaction(channel, page, message) {
   transaction.update(Channel.modelName, channel._id, channel);
   transaction.insert(Message.modelName, message);
   transaction.insert(Page.modelName, page);
-  // transaction.update(Page.modelName, page._id, page, {upsert: true});
+
   try {
     await transaction.run();
     return true;
