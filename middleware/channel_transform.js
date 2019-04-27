@@ -10,17 +10,15 @@ function selectUser(users, email) {
 };
 
 function transformRequest(users, req) {
-  const validWorkspace = _.pick(req.body,
+  const validChannel = _.pick(req.body,
       [
-        'name', 'imageUrl', 'location', 'description',
-        'welcomeMessage', 'channels'
+        'name', 'description', 'isPrivate', 'welcomeMessage'
       ]
   );
-  validWorkspace.creator = selectUser(users, req.body.creator)[0];
-  validWorkspace.users = selectUser(users, req.body.users);
-  validWorkspace.admins = selectUser(users, req.body.admins);
+  validChannel.creator = selectUser(users, req.body.creator)[0];
+  validChannel.users = selectUser(users, req.body.admins);
 
-  req.validWorkspace = validWorkspace;
+  req.validChannel = validChannel;
 };
 
 async function validUserEmails(emails, req) {
@@ -28,13 +26,8 @@ async function validUserEmails(emails, req) {
   transformRequest(users, req);
 };
 
-function allUsers(creator, admins, users) {
+function allUsers(creator, users) {
   const emails = [creator];
-  if (admins) {
-    admins.forEach(function(email) {
-      if (!emails.includes(email)) emails.push(email);
-    });
-  }
   if (users) {
     users.forEach(function(email) {
       if (!emails.includes(email)) emails.push(email);
@@ -44,11 +37,10 @@ function allUsers(creator, admins, users) {
 };
 
 module.exports = async function(req, res, next) {
-  const emails = allUsers(req.body.creator, req.body.admins, req.body.users);
+  const emails = allUsers(req.body.creator, req.body.users);
   await validUserEmails(emails, req);
 
-  if (req.validWorkspace.creator && (req.validWorkspace.users.length > 0)
-   && (req.validWorkspace.admins.length > 0)) {
+  if (req.validChannel.creator && (req.validChannel.users.length > 0)) {
     next();
   } else {
     return res.status(404).send('Invalid users.');

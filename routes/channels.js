@@ -2,7 +2,7 @@ const express = require('express');
 const Transaction = require('mongoose-transactions');
 const _ = require('lodash');
 const auth = require('../middleware/auth');
-const usersExist = require('../middleware/existing_users');
+const channelTransform = require('../middleware/channel_transform');
 const {Workspace} = require('../models/workspace');
 
 const router = express.Router();
@@ -35,7 +35,7 @@ router.get('/:channelId', auth, async (request, response) => {
   response.status(200).send(messages);
 });
 
-router.post('/', [auth, usersExist], async (request, response) => {
+router.post('/', [auth, channelTransform], async (request, response) => {
   const fields = [
     'name', 'users', 'isPrivate', 'description', 'welcomeMessage'
   ];
@@ -106,7 +106,7 @@ router.patch('/', auth, async (request, response) => {
   return response.status(200).send(_.pick(channel, fields));
 });
 
-router.patch('/addUsers', [auth, usersExist], async (request, response) => {
+router.patch('/addUsers', [auth, channelTransform], async (request, response) => {
   const fields = ['users'];
 
   const {error} = validateChannelUpdate(_.pick(request.body, fields));
