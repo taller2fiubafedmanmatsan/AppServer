@@ -56,65 +56,64 @@ describe('/api/workspaces', ()=> {
     });
 
     it('should return new workspace if request is valid', async ()=> {
-      console.log(name);
       const response = await execute();
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            'name', 'imageUrl', 'location', 'creator', 'description',
+            'name', 'creator', 'description',
             'welcomeMessage', 'channels', 'users', 'admins'
           ])
       );
     });
 
-    // it('should return 400 if name is missing', async ()=> {
-    //   name = null;
-    //   const response = await execute();
-    //   console.log(response.error);
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if name is missing', async ()=> {
+      name = null;
+      const response = await execute();
 
-    // it('should return 400 if name is less than 1 characters', async ()=> {
-    //   name = '';
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if name is less than 1 characters', async ()=> {
+      name = '';
+      const response = await execute();
 
-    // it('should return 400 if name is more than 250 characters', async ()=> {
-    //   name = new Array(252).join('a');
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if name is more than 250 characters', async ()=> {
+      name = new Array(252).join('a');
+      const response = await execute();
 
-    // it('should return 400 if creator is missing', async ()=> {
-    //   creator = null;
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if creator is missing', async ()=> {
+      creator = null;
+      const response = await execute();
 
-    // it(`should return 400 if creator doesn't exists`, async ()=> {
-    //   creator = 'changos@gmail.com';
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it(`should return 400 if creator doesn't exists`, async ()=> {
+      creator = 'changos@gmail.com';
+      const response = await execute();
 
-    // it('should return 400 if there are no users', async ()=> {
-    //   users = null;
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if there are no users', async ()=> {
+      users = null;
+      const response = await execute();
 
-    // it('should return 400 if there are no admins', async ()=> {
-    //   admins = null;
-    //   const response = await execute();
+      expect(response.status).toBe(400);
+    });
 
-    //   expect(response.status).toBe(400);
-    // });
+    it('should return 400 if there are no admins', async ()=> {
+      admins = null;
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+    });
   });
 });
