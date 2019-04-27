@@ -34,7 +34,7 @@ function validateChannel(channel) {
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250)
   };
-  Joi.validate(channel, schema);
+  return Joi.validate(channel, schema);
 };
 
 exports.Channel = Channel;

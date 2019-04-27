@@ -15,7 +15,7 @@ function validatePage(page) {
     messages: Joi.array().items(Joi.objectId()).required(),
     number: Joi.number().max(50).required()
   };
-  Joi.validate(page, schema);
+  return Joi.validate(page, schema);
 };
 
 exports.Page = Page;
