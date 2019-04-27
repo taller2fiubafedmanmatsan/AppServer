@@ -88,32 +88,36 @@ describe('/api/workspaces', ()=> {
       expect(response.status).toBe(400);
     });
 
-    it('should return 400 if creator is missing', async ()=> {
+    it('should return 404 if creator is missing', async ()=> {
       creator = null;
       const response = await execute();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
+      expect(response.text).toEqual('Invalid users.');
     });
 
-    it(`should return 400 if creator doesn't exists`, async ()=> {
+    it(`should return 404 if creator doesn't exists`, async ()=> {
       creator = 'changos@gmail.com';
       const response = await execute();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
+      expect(response.text).toEqual('Invalid users.');
     });
 
-    it('should return 400 if there are no users', async ()=> {
+    it('should return 404 if there are no users', async ()=> {
       users = null;
       const response = await execute();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
+      expect(response.text).toEqual('Invalid users.');
     });
 
-    it('should return 400 if there are no admins', async ()=> {
+    it('should return 404 if there are no admins', async ()=> {
       admins = null;
       const response = await execute();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
+      expect(response.text).toEqual('Invalid users.');
     });
   });
 });
