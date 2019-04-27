@@ -1,4 +1,5 @@
 const {User} = require('../models/user');
+const _ = require('lodash');
 
 function selectUser(users, email) {
   return users.filter((user) => {
@@ -8,19 +9,23 @@ function selectUser(users, email) {
   });
 };
 
-function addValidUsersInRequest(users, req) {
-  req.validUsers = {
-    creator: selectUser(users, req.body.creator)[0],
-    admins: selectUser(users, req.body.admins),
-    users: selectUser(users, req.body.users)
-  };
+function transformRequest(users, req) {
+  const validWorkspace = _.pick(req.body,
+      [
+        'name', 'imageUrl', 'location', 'description',
+        'welcomeMessage', 'channels'
+      ]
+  );
+  validWorkspace.creator = selectUser(users, req.body.creator)[0];
+  validWorkspace.users = selectUser(users, req.body.admins);
+  validWorkspace.admins = selectUser(users, req.body.users);
+
+  req.validWorkspace = validWorkspace;
 };
 
 async function validUserEmails(emails, req) {
-  const length = emails.length;
   const users = await User.find({email: {$in: emails}});
-  addValidUsersInRequest(users, req);
-  return length === req.validUsers.length;
+  transformRequest(users, req);
 };
 
 function allUsers(creator, admins, users) {
@@ -42,8 +47,8 @@ module.exports = async function(req, res, next) {
   const emails = allUsers(req.body.creator, req.body.admins, req.body.users);
   await validUserEmails(emails, req);
 
-  if (req.validUsers.creator && (req.validUsers.users.length > 0)
-   && (req.validUsers.admins.length > 0)) {
+  if (req.validWorkspace.creator && (req.validWorkspace.users.length > 0)
+   && (req.validWorkspace.admins.length > 0)) {
     next();
   } else {
     return res.status(404).send('Invalid users.');
