@@ -134,7 +134,7 @@ describe('/api/channels', ()=> {
     });
   });
 
-  describe('GET /:channelId', () => {
+  describe('GET /:channelName/workspace/:workspaceName', () => {
     let name;
     let creator;
     let users;
@@ -171,7 +171,7 @@ describe('/api/channels', ()=> {
 
     const execute = ()=> {
       return request(server)
-          .get(`/api/channels/${myChannel.name}`)
+          .get(`/api/channels/${myChannel.name}/workspace/${workspaceName}`)
           .set('x-auth-token', token);
     };
 

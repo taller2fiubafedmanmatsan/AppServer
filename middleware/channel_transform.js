@@ -4,9 +4,9 @@ const _ = require('lodash');
 function selectUser(users, email) {
   return users.filter((user) => {
     if (Array.isArray(email) && email.includes(user.email)) {
-      return user._id;
+      return user;
     } else if (user.email === email) {
-      return user._id;
+      return user;
     }
   });
 };
@@ -17,6 +17,7 @@ function transformRequest(users, req) {
         'name', 'description', 'isPrivate', 'welcomeMessage'
       ]
   );
+
   validChannel.creator = selectUser(users, req.body.creator)[0];
   validChannel.users = selectUser(users, req.body.users);
 

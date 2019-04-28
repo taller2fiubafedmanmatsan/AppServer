@@ -14,27 +14,36 @@ const {
   validateChannelUpdate
 } = require('../models/channel');
 
-router.get('/:channelName', auth, async (request, response) => {
-  const channelName = request.params.channelName;
+router.param('workspaceName', async (request, response, next, elementId) => {
+  const workspace = await Workspace.findOne({name: elementId})
+      .populate('channels', 'name');
+  if (!workspace) return response.status(404).send('Invalid workspace.');
+
+  request.workspace = workspace;
+  next();
+});
+
+router.param('channelName', async (request, response, next, channelName) => {
   const channel = await Channel.findOne({name: channelName}).
-      populate([{path: 'pages',
-        populate: {path: 'pages.messages', model: 'Message'}}]);
+      populate('pages', '-__v')
+      .populate('users', '-password -__v')
+      .populate('creator', '-password -__v');
 
   if (!channel) return response.status(404).send('Invalid channel.');
 
-  if (!channel.users.some((userId) => userId == request.user._id)) {
-    const msg = 'The user cannot see messages from this channel';
-    return response.status(403).send(msg);
-  }
-
-  // const messages = [];
-  // channel.pages.forEach((aPage) => {
-  //   aPage.messages.forEach((aMessage) => messages.push(aMessage));
-  // });
-
-
-  response.status(200).send(channel);
+  request.channel = channel;
+  next();
 });
+
+router.get('/:channelName/workspace/:workspaceName', auth,
+    async (request, response) => {
+      if (!request.channel.users.some((user) => user._id == request.user._id)) {
+        const msg = 'The user cannot see messages from this channel';
+        return response.status(403).send(msg);
+      }
+
+      response.status(200).send(request.channel);
+    });
 
 router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
@@ -46,11 +55,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       const {error} = validateChannel(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
-      const workspaceName = request.params.workspaceName;
-      const workspace = await Workspace.findOne({name: workspaceName})
-          .populate('channels', 'name');
-      if (!workspace) return response.status(404).send('Invalid workspace.');
-
+      const workspace = request.workspace;
       if (!workspace.admins.some((userId) => userId == request.user._id)) {
         return response.status(403).send('The user cannot create channels' +
                                           ' in this workspace');
