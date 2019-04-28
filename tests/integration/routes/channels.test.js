@@ -45,6 +45,13 @@ describe('/api/channels', ()=> {
     await server.close();
   });
 
+  afterEach(async ()=> {
+    await Channel.remove({});
+    workspace = await Workspace.findByIdAndUpdate(workspace._id,
+        {channels: []},
+        {new: true});
+  });
+
   describe('POST /', () => {
     let name;
     let creator;
@@ -65,6 +72,9 @@ describe('/api/channels', ()=> {
 
     afterEach(async ()=> {
       await Channel.remove({});
+      workspace = await Workspace.findByIdAndUpdate(workspace._id,
+          {channels: []},
+          {new: true});
     });
 
     const execute = ()=> {
@@ -80,7 +90,6 @@ describe('/api/channels', ()=> {
     it('should return new channel if request is valid', async ()=> {
       const response = await execute();
 
-      console.log(response.text);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
@@ -179,7 +188,6 @@ describe('/api/channels', ()=> {
     it('should return the channel is request is valid', async () => {
       const response = await execute();
 
-      console.log(response.text);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
@@ -187,6 +195,58 @@ describe('/api/channels', ()=> {
             'isPrivate', 'creator'
           ])
       );
+    });
+  });
+
+  describe('GET /workspace/:workspaceName', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage, workspaceName
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      workspaceName = workspace.name;
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
+    });
+
+    afterEach(async ()=> {
+      await Channel.remove({});
+      workspace = await Workspace.findByIdAndUpdate(workspace._id,
+          {channels: []},
+          {new: true});
+    });
+
+    const execute = ()=> {
+      return request(server)
+          .get(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token);
+    };
+
+    it('should return the channel is request is valid', async () => {
+      const response = await execute();
+
+      expect(response.status).toBe(200);
+      expect(response.body[0].name).toEqual(myChannel.name);
     });
   });
 
@@ -247,14 +307,12 @@ describe('/api/channels', ()=> {
 
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');
-      console.log(response.text);
       expect(response.status).toBe(200);
 
       const usersEmails = updatedChannel.users.map((user) => {
         return user.email;
       });
       users.push(userEmail);
-      console.log(users);
       expect(usersEmails).toEqual(expect.arrayContaining(users));
     });
   });

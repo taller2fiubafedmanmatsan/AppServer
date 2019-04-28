@@ -1,6 +1,7 @@
 const express = require('express');
 const Transaction = require('mongoose-transactions');
 const _ = require('lodash');
+// const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
 const {Workspace} = require('../models/workspace');
@@ -16,7 +17,7 @@ const {
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
-      .populate('channels', 'name');
+      .populate('channels', '-id -__v');
   if (!workspace) return response.status(404).send('Invalid workspace.');
 
   request.workspace = workspace;
@@ -44,6 +45,15 @@ router.get('/:channelName/workspace/:workspaceName', auth,
 
       response.status(200).send(request.channel);
     });
+
+router.get('/workspace/:workspaceName', auth, async (request, response) => {
+  // const userId = mongoose.Types.ObjectId(request.user._id);
+  const userChannels = request.workspace.channels.filter((ch) => {
+    if (ch.users.some((u) => u._id == request.user._id)) return ch;
+  });
+
+  response.status(200).send(userChannels);
+});
 
 router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
@@ -73,6 +83,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
           .some((aChannel) => aChannel.name == channel.name)) {
         return response.status(400).send('Channel already registered.');
       }
+      workspace.channels.push(channel._id);
 
       if (!finishedCreationTransaction(workspace, channel, page)) {
         return response.status(500).send(error);
@@ -134,20 +145,8 @@ router.patch('/:channelName/addUsers', [auth, channelTransform],
                                           ' this channel');
       }
 
-      // users.forEach((user) => {
-      //   if (!channel.users.some((member) => member.email == user.email)) {
-      //     channel.users.push(user.email);
-      //   }
-      // });
-
-
-      const usersIds = users.map((user) => user._id);
-      // await User.findByIdAndUpdate(usersIds,
-      //     {$addToSet: {channels: channel._id}}
-      // );
-
       channel = await Channel.findByIdAndUpdate(channel._id,
-          {$addToSet: {users: usersIds}},
+          {$addToSet: {users: users.map((user) => user._id)}},
           {new: true});
 
       return response.status(200).send(_.pick(channel, fields));
