@@ -53,7 +53,7 @@ router.post('/', [auth, channelTransform], async (request, response) => {
     return response.status(403).send('The user cannot create channels' +
                                       ' in this workspace');
   }
-  const channel = new Channel(_.pick(request.body, fields));
+  const channel = new Channel(_.pick(request.validChannel, fields));
   channel.creator = request.user._id;
   if (workspace.channels.some((aChannel) => aChannel.name == channel.name)) {
     return response.status(400).send('Channel already registered.');

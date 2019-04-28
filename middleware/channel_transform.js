@@ -3,9 +3,11 @@ const _ = require('lodash');
 
 function selectUser(users, email) {
   return users.filter((user) => {
-    if (Array.isArray(email)) return email.includes(user.email);
-
-    return user.email === email;
+    if (Array.isArray(email) && email.includes(user.email)) {
+      return user._id;
+    } else if (user.email === email) {
+      return user._id;
+    }
   });
 };
 
