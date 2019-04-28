@@ -16,7 +16,7 @@ function transformRequest(users, req) {
       ]
   );
   validChannel.creator = selectUser(users, req.body.creator)[0];
-  validChannel.users = selectUser(users, req.body.admins);
+  validChannel.users = selectUser(users, req.body.users);
 
   req.validChannel = validChannel;
 };

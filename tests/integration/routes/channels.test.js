@@ -10,6 +10,7 @@ describe('/api/workspaces/channels', ()=> {
   const userEmail = 'user@test.com';
   let user;
   let workspace;
+  let workspaceId;
 
   const createUser = ()=> {
     return request(server)
@@ -50,7 +51,6 @@ describe('/api/workspaces/channels', ()=> {
     // let admins;
     let description;
     let welcomeMessage;
-    let workspaceId;
 
     beforeEach(async ()=> {
       name = 'channelName';

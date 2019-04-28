@@ -106,31 +106,32 @@ router.patch('/', auth, async (request, response) => {
   return response.status(200).send(_.pick(channel, fields));
 });
 
-router.patch('/addUsers', [auth, channelTransform], async (request, response) => {
-  const fields = ['users'];
+router.patch('/addUsers', [auth, channelTransform],
+    async (request, response) => {
+      const fields = ['users'];
 
-  const {error} = validateChannelUpdate(_.pick(request.body, fields));
-  if (error) return response.status(400).send(error.details[0].message);
+      const {error} = validateChannelUpdate(_.pick(request.body, fields));
+      if (error) return response.status(400).send(error.details[0].message);
 
-  const {channelId, users} = request.body;
+      const {channelId, users} = request.body;
 
-  let channel = await Channel.findById(channelId);
-  if (!channel) return response.status(404).send('Invalid channel.');
+      let channel = await Channel.findById(channelId);
+      if (!channel) return response.status(404).send('Invalid channel.');
 
-  if (!channel.users.some((userId) => userId == request.user._id)) {
-    return response.status(403).send('The user cannot add users' +
-                                      ' this channel');
-  }
+      if (!channel.users.some((userId) => userId == request.user._id)) {
+        return response.status(403).send('The user cannot add users' +
+                                          ' this channel');
+      }
 
-  users.forEach((userMail) => {
-    if (!channel.users.some((memberMail) => memberMail == userMail)) {
-      channel.users.push(userMail);
-    }
-  });
-  channel = await Channel.findByIdAndUpdate(channel._id,
-      _.pick(channel, fields), {new: true});
-  return response.status(200).send(_.pick(channel, fields));
-});
+      users.forEach((userMail) => {
+        if (!channel.users.some((memberMail) => memberMail == userMail)) {
+          channel.users.push(userMail);
+        }
+      });
+      channel = await Channel.findByIdAndUpdate(channel._id,
+          _.pick(channel, fields), {new: true});
+      return response.status(200).send(_.pick(channel, fields));
+    });
 
 async function finishedCreationTransaction(workspace, channel) {
   transaction = new Transaction();
