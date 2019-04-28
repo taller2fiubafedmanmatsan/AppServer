@@ -5,7 +5,7 @@ const {Channel} = require('../../../models/channel');
 
 let server;
 
-describe('/api/workspaces/channels', ()=> {
+describe('/api/channels', ()=> {
   let token;
   const userEmail = 'user@test.com';
   let user;
@@ -43,12 +43,11 @@ describe('/api/workspaces/channels', ()=> {
     await server.close();
   });
 
-  describe('POST /', ()=> {
+  describe('POST /', () => {
     let name;
     let creator;
     let users;
     let isPrivate;
-    // let admins;
     let description;
     let welcomeMessage;
 
@@ -56,7 +55,6 @@ describe('/api/workspaces/channels', ()=> {
       name = 'channelName';
       creator = userEmail;
       users = [userEmail];
-      // admins = [userEmail];
       isPrivate = true;
       description = 'a';
       welcomeMessage = 'a';
@@ -69,7 +67,7 @@ describe('/api/workspaces/channels', ()=> {
 
     const execute = ()=> {
       return request(server)
-          .post('/api/workspaces/channels')
+          .post(`/api/channels/workspace/${workspaceId}`)
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
@@ -83,7 +81,8 @@ describe('/api/workspaces/channels', ()=> {
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            'name', 'welcomeMessage', 'description'
+            '_id', 'name', 'welcomeMessage', 'description', 'users',
+            'isPrivate', 'creator'
           ])
       );
     });
@@ -133,4 +132,59 @@ describe('/api/workspaces/channels', ()=> {
       expect(response.text).toEqual('Invalid users.');
     });
   });
+
+  describe('GET /:channelId', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceId}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage, workspaceId
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      workspaceId = workspace._id;
+      myChannel = await createChannel();
+    });
+
+    afterEach(async ()=> {
+      await Channel.remove({});
+    });
+
+    const execute = ()=> {
+      return request(server)
+          .get(`/api/channels/` + myChannel._id)
+          .set('x-auth-token', token);
+    };
+
+    it('should return the channel is request is valid', async () => {
+      const response = await execute();
+
+      console.log(response.text);
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'name', 'welcomeMessage', 'description', 'users',
+            'isPrivate', 'creator'
+          ])
+      );
+    });
+  });
 });
+

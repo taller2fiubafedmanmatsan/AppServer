@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Joi = require('joi');
+const messageSchema = require('./message');
 Joi.objectId = require('joi-objectid')(Joi);
-const messageSchema = require('./message').messageSchema;
 
 const pageSchema = mongoose.Schema({
   messages: [messageSchema],

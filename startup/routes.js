@@ -16,6 +16,6 @@ module.exports = function(app) {
   app.use('/api/users', users);
   app.use('/api/auth', auth);
   app.use('/api/workspaces', workspaces);
-  app.use('/api/workspaces/channels', channels);
+  app.use('/api/channels', channels);
   app.use(error);
 };

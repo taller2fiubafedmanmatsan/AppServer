@@ -13,7 +13,7 @@ const {
   validateChannelUpdate
 } = require('../models/channel');
 
-router.get('/:channelId', auth, async (request, response) => {
+router.get('/:channelName', auth, async (request, response) => {
   const channelId = request.params.channelId;
   const channel = await Channel.findById(channelId).
       populate({path: 'pages',
@@ -26,47 +26,53 @@ router.get('/:channelId', auth, async (request, response) => {
     return response.status(403).send(msg);
   }
 
-  const messages = [];
-  channel.pages.forEach((aPage) => {
-    aPage.messages.forEach((aMessage) => messages.push(aMessage));
-  });
+  // const messages = [];
+  // channel.pages.forEach((aPage) => {
+  //   aPage.messages.forEach((aMessage) => messages.push(aMessage));
+  // });
 
 
-  response.status(200).send(messages);
+  response.status(200).send(channel);
 });
 
-router.post('/', [auth, channelTransform], async (request, response) => {
-  const fields = [
-    'name', 'users', 'isPrivate', 'description', 'welcomeMessage'
-  ];
+router.post('/workspace/:workspaceId', [auth, channelTransform],
+    async (request, response) => {
+      const fields = [
+        'name', 'users', 'isPrivate', 'description', 'welcomeMessage', 'creator'
+      ];
 
-  const {error} = validateChannel(_.pick(request.body, fields));
-  if (error) return response.status(400).send(error.details[0].message);
+      const {error} = validateChannel(_.pick(request.body, fields));
+      if (error) return response.status(400).send(error.details[0].message);
 
-  const {workspaceId} = request.body;
-  const workspace = await Workspace.
-      findById(workspaceId).
-      populate('channels', 'name');
-  if (!workspace) return response.status(404).send('Invalid workspace.');
+      const workspaceId = request.params.workspaceId;
+      const workspace = await Workspace.findById(workspaceId)
+          .populate('channels', 'name');
+      if (!workspace) return response.status(404).send('Invalid workspace.');
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
-    return response.status(403).send('The user cannot create channels' +
-                                      ' in this workspace');
-  }
-  const channel = new Channel(_.pick(request.validChannel, fields));
-  channel.creator = request.user._id;
-  if (workspace.channels.some((aChannel) => aChannel.name == channel.name)) {
-    return response.status(400).send('Channel already registered.');
-  }
-  workspace.channels.push(channel._id);
-  if (!finishedCreationTransaction(workspace, channel)) {
-    return response.status(500).send(error);
-  }
-  return response.status(200).send(_.pick(channel,
-      [
-        '_id', 'name', 'welcomeMessage', 'description'
-      ]));
-});
+      if (!workspace.admins.some((userId) => userId == request.user._id)) {
+        return response.status(403).send('The user cannot create channels' +
+                                          ' in this workspace');
+      }
+      const channel = new Channel(_.pick(request.validChannel, fields));
+      channel.creator = request.user._id;
+      if (workspace.channels
+          .some((aChannel) => aChannel.name == channel.name)) {
+        return response.status(400).send('Channel already registered.');
+      }
+
+      // channel = await channel.save();
+      // workspace.channels.push(channel._id);
+      // await workspace.save();
+
+      if (!finishedCreationTransaction(workspace, channel)) {
+        return response.status(500).send(error);
+      }
+      return response.status(200).send(_.pick(channel,
+          [
+            '_id', 'name', 'welcomeMessage', 'description', 'users',
+            'isPrivate', 'creator'
+          ]));
+    });
 
 router.patch('/', auth, async (request, response) => {
   const fields = [
@@ -135,8 +141,9 @@ router.patch('/addUsers', [auth, channelTransform],
 
 async function finishedCreationTransaction(workspace, channel) {
   transaction = new Transaction();
-  transaction.update(Workspace.modelName, workspace._id, workspace);
   transaction.insert(Channel.modelName, channel);
+  transaction.update(Workspace.modelName, workspace._id, workspace);
+
   try {
     await transaction.run();
     return true;
