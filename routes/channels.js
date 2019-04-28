@@ -1,7 +1,6 @@
 const express = require('express');
 const Transaction = require('mongoose-transactions');
 const _ = require('lodash');
-// const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
 const {Workspace} = require('../models/workspace');
@@ -47,7 +46,6 @@ router.get('/:channelName/workspace/:workspaceName', auth,
     });
 
 router.get('/workspace/:workspaceName', auth, async (request, response) => {
-  // const userId = mongoose.Types.ObjectId(request.user._id);
   const userChannels = request.workspace.channels.filter((ch) => {
     if (ch.users.some((u) => u._id == request.user._id)) return ch;
   });
