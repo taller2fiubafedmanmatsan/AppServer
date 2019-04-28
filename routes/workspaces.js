@@ -56,10 +56,6 @@ router.post('/', [auth, usersExist], async (request, response) => {
       })
       .run();
 
-  // creator.workspaces.push(_.pick(workspace, ['_id', 'name']));
-  // await creator.save();
-  // await workspace.save();
-
   response.status(200).send(_.pick(workspace, [
     'name', 'imageUrl', 'location', 'creator', 'description',
     'welcomeMessage', 'channels', 'users', 'admins'
