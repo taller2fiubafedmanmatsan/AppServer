@@ -2,6 +2,7 @@ const request = require('supertest');
 const {User} = require('../../../models/user');
 const {Workspace} = require('../../../models/workspace');
 const {Channel} = require('../../../models/channel');
+const {Page} = require('../../../models/page');
 
 let server;
 
@@ -12,7 +13,7 @@ describe('/api/channels', ()=> {
   let workspace;
   let workspaceName;
 
-  const createUser = ()=> {
+  const createUser = (userEmail)=> {
     return request(server)
         .post('/api/users')
         .send({name: 'name', email: userEmail, password: 'password'});
@@ -30,7 +31,7 @@ describe('/api/channels', ()=> {
 
   beforeAll(async ()=> {
     server = require('../../../index');
-    await createUser();
+    await createUser(userEmail);
     user = await User.findOne({email: userEmail});
     token = user.getAuthToken();
     await createWorkspace();
@@ -40,6 +41,7 @@ describe('/api/channels', ()=> {
   afterAll(async ()=> {
     await User.remove({});
     await Workspace.remove({});
+    await Page.remove({});
     await server.close();
   });
 
@@ -185,6 +187,75 @@ describe('/api/channels', ()=> {
             'isPrivate', 'creator'
           ])
       );
+    });
+  });
+
+  describe('PATCH /:channelName/addUsers', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+    const userEmail2 = 'user2@test.com';
+    const userEmail3 = 'user3@test.com';
+    let user2;
+    let user3;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage, workspaceName
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      workspaceName = workspace.name;
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
+      await createUser(userEmail2);
+      user2 = await User.findOne({email: userEmail2});
+      await createUser(userEmail3);
+      user3 = await User.findOne({email: userEmail3});
+    });
+
+    afterEach(async ()=> {
+      await Channel.remove({});
+      await User.remove({});
+    });
+
+    const execute = ()=> {
+      return request(server)
+          .patch(`/api/channels/${myChannel.name}/addUsers`)
+          .set('x-auth-token', token)
+          .send({creator, users});
+    };
+
+    it('should add the new users to the channel', async () => {
+      users = [user2.email, user3.email];
+      const response = await execute();
+
+      const updatedChannel = await Channel.findOne({name: myChannel.name})
+          .populate('users', 'email');
+      console.log(response.text);
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedChannel.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      console.log(users);
+      expect(usersEmails).toEqual(expect.arrayContaining(users));
     });
   });
 });

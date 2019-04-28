@@ -41,7 +41,7 @@ function validateChannelUpdate(channel) {
   const schema = {
     name: Joi.string().min(1).max(50),
     pages: Joi.array().items(Joi.objectId()),
-    users: Joi.array().items(Joi.email()),
+    users: Joi.array().items(Joi.string().email()),
     creator: Joi.objectId(),
     isPrivate: Joi.boolean(),
     description: Joi.string().min(1).max(250),
