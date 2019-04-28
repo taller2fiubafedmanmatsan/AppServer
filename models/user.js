@@ -16,7 +16,11 @@ const userSchema = mongoose.Schema({
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
   isAdmin: Boolean,
   photoUrl: String,
-  facebook_log: {type: Boolean, require: true}
+  facebook_log: {type: Boolean, require: true},
+  workspaces: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Workspace'
+  }]
 });
 
 userSchema.methods.getAuthToken = function() {
@@ -26,12 +30,12 @@ userSchema.methods.getAuthToken = function() {
   );
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema, 'users');
 
 function validateUser(user) {
   const schema = {
     name: Joi.string().min(1).max(50).trim().required(),
-    email: Joi.string().min(3).max(50).trim().required().email(),
+    email: Joi.string().min(3).max(50).trim().email().required(),
     nickname: Joi.string().min(1).max(50).trim(),
     password: Joi.string().min(6).max(255).required(),
     isAdmin: Joi.bool(),

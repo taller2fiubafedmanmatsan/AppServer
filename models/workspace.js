@@ -25,22 +25,23 @@ const workspaceSchema = mongoose.Schema({
   }]
 });
 
-const Workspace = mongoose.model('Workspace', workspaceSchema);
+const Workspace = mongoose.model('Workspace', workspaceSchema, 'workspaces');
 
 function validateWorkspace(workspace) {
   const schema = {
     name: Joi.string().trim().min(1).max(250).required(),
     imageUrl: Joi.string().trim().uri(),
     location: Joi.string(),
-    creator: Joi.objectId().required(),
+    creator: Joi.string().trim().email().required(),
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250),
-    channels: Joi.array().items(Joi.objectId()).required(),
-    users: Joi.array().items(Joi.objectId()).required(),
-    admins: Joi.array().items(Joi.objectId()).required()
+    channels: Joi.array().items(Joi.string().trim()),
+    users: Joi.array().items(Joi.string().trim().email()).required(),
+    admins: Joi.array().items(Joi.string().trim().email()).required()
   };
-  Joi.validate(workspace, schema);
+
+  return Joi.validate(workspace, schema);
 };
 
 exports.Workspace = Workspace;
-exports.validateWorkspace = validateWorkspace;
+exports.validate = validateWorkspace;

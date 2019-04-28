@@ -3,7 +3,7 @@ const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
 
 const messageSchema = mongoose.Schema({
-  user: {
+  creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     require: true
