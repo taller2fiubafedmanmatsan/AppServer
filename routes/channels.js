@@ -4,6 +4,7 @@ const _ = require('lodash');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
 const {Workspace} = require('../models/workspace');
+const {Page} = require('../models/page');
 
 const router = express.Router();
 
@@ -14,10 +15,10 @@ const {
 } = require('../models/channel');
 
 router.get('/:channelName', auth, async (request, response) => {
-  const channelId = request.params.channelId;
-  const channel = await Channel.findById(channelId).
-      populate({path: 'pages',
-        populate: {path: 'pages.messages', model: 'Message'}});
+  const channelName = request.params.channelName;
+  const channel = await Channel.findOne({name: channelName}).
+      populate([{path: 'pages',
+        populate: {path: 'pages.messages', model: 'Message'}}]);
 
   if (!channel) return response.status(404).send('Invalid channel.');
 
@@ -35,17 +36,18 @@ router.get('/:channelName', auth, async (request, response) => {
   response.status(200).send(channel);
 });
 
-router.post('/workspace/:workspaceId', [auth, channelTransform],
+router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
       const fields = [
-        'name', 'users', 'isPrivate', 'description', 'welcomeMessage', 'creator'
+        'name', 'users', 'isPrivate', 'description', 'welcomeMessage',
+        'creator', 'pages'
       ];
 
       const {error} = validateChannel(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
-      const workspaceId = request.params.workspaceId;
-      const workspace = await Workspace.findById(workspaceId)
+      const workspaceName = request.params.workspaceName;
+      const workspace = await Workspace.findOne({name: workspaceName})
           .populate('channels', 'name');
       if (!workspace) return response.status(404).send('Invalid workspace.');
 
@@ -53,6 +55,14 @@ router.post('/workspace/:workspaceId', [auth, channelTransform],
         return response.status(403).send('The user cannot create channels' +
                                           ' in this workspace');
       }
+
+      const page = new Page({
+        messages: [],
+        number: 0
+      });
+
+      request.validChannel.pages = [page];
+
       const channel = new Channel(_.pick(request.validChannel, fields));
       channel.creator = request.user._id;
       if (workspace.channels
@@ -60,11 +70,7 @@ router.post('/workspace/:workspaceId', [auth, channelTransform],
         return response.status(400).send('Channel already registered.');
       }
 
-      // channel = await channel.save();
-      // workspace.channels.push(channel._id);
-      // await workspace.save();
-
-      if (!finishedCreationTransaction(workspace, channel)) {
+      if (!finishedCreationTransaction(workspace, channel, page)) {
         return response.status(500).send(error);
       }
       return response.status(200).send(_.pick(channel,
@@ -139,9 +145,10 @@ router.patch('/addUsers', [auth, channelTransform],
       return response.status(200).send(_.pick(channel, fields));
     });
 
-async function finishedCreationTransaction(workspace, channel) {
+async function finishedCreationTransaction(workspace, channel, page) {
   transaction = new Transaction();
   transaction.insert(Channel.modelName, channel);
+  transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
 
   try {

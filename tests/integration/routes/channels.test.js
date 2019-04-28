@@ -10,7 +10,7 @@ describe('/api/channels', ()=> {
   const userEmail = 'user@test.com';
   let user;
   let workspace;
-  let workspaceId;
+  let workspaceName;
 
   const createUser = ()=> {
     return request(server)
@@ -58,7 +58,7 @@ describe('/api/channels', ()=> {
       isPrivate = true;
       description = 'a';
       welcomeMessage = 'a';
-      workspaceId = workspace._id;
+      workspaceName = workspace.name;
     });
 
     afterEach(async ()=> {
@@ -67,17 +67,18 @@ describe('/api/channels', ()=> {
 
     const execute = ()=> {
       return request(server)
-          .post(`/api/channels/workspace/${workspaceId}`)
+          .post(`/api/channels/workspace/${workspaceName}`)
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceId
+            description, welcomeMessage, workspaceName
           });
     };
 
     it('should return new channel if request is valid', async ()=> {
       const response = await execute();
 
+      console.log(response.text);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
@@ -144,11 +145,11 @@ describe('/api/channels', ()=> {
 
     const createChannel = ()=> {
       return request(server)
-          .post(`/api/channels/workspace/${workspaceId}`)
+          .post(`/api/channels/workspace/${workspaceName}`)
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceId
+            description, welcomeMessage, workspaceName
           });
     };
 
@@ -159,8 +160,9 @@ describe('/api/channels', ()=> {
       isPrivate = true;
       description = 'a';
       welcomeMessage = 'a';
-      workspaceId = workspace._id;
-      myChannel = await createChannel();
+      workspaceName = workspace.name;
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
     });
 
     afterEach(async ()=> {
@@ -169,7 +171,7 @@ describe('/api/channels', ()=> {
 
     const execute = ()=> {
       return request(server)
-          .get(`/api/channels/` + myChannel._id)
+          .get(`/api/channels/${myChannel.name}`)
           .set('x-auth-token', token);
     };
 
