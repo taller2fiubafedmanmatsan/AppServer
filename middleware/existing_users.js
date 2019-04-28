@@ -16,6 +16,7 @@ function transformRequest(users, req) {
         'welcomeMessage', 'channels'
       ]
   );
+
   validWorkspace.creator = selectUser(users, req.body.creator)[0];
   validWorkspace.users = selectUser(users, req.body.users);
   validWorkspace.admins = selectUser(users, req.body.admins);

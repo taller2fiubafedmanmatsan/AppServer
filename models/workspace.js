@@ -25,7 +25,7 @@ const workspaceSchema = mongoose.Schema({
   }]
 });
 
-const Workspace = mongoose.model('Workspace', workspaceSchema);
+const Workspace = mongoose.model('Workspace', workspaceSchema, 'workspaces');
 
 function validateWorkspace(workspace) {
   const schema = {
