@@ -28,8 +28,8 @@ function validateChannel(channel) {
   const schema = {
     name: Joi.string().min(1).max(50).required(),
     pages: Joi.array().items(Joi.objectId()),
-    users: Joi.array().items(Joi.objectId()).required(),
-    creator: Joi.objectId(),
+    users: Joi.array().items(Joi.string().trim().email()).required(),
+    creator: Joi.string().trim().email(),
     isPrivate: Joi.boolean(),
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250)
@@ -41,7 +41,7 @@ function validateChannelUpdate(channel) {
   const schema = {
     name: Joi.string().min(1).max(50),
     pages: Joi.array().items(Joi.objectId()),
-    users: Joi.array().items(Joi.objectId()),
+    users: Joi.array().items(Joi.email()),
     creator: Joi.objectId(),
     isPrivate: Joi.boolean(),
     description: Joi.string().min(1).max(250),

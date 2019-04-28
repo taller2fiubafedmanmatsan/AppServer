@@ -61,6 +61,9 @@ describe('/api/workspaces/channels', ()=> {
       description = 'a';
       welcomeMessage = 'a';
       workspaceId = workspace._id;
+    });
+
+    afterEach(async ()=> {
       await Channel.remove({});
     });
 
