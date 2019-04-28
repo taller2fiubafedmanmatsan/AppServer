@@ -15,6 +15,7 @@ const {
 
 router.get('/me', auth, async (request, response) => {
   const user = await User.findById(request.user._id)
+      .populate('workspaces', 'name')
       .select('-password -__v');
 
   response.status(200).send(user);
@@ -32,10 +33,11 @@ router.post('/', async (request, response) => {
 
   const salt = await bcrypt.genSalt(10);
   request.body.password = await bcrypt.hash(password, salt);
+  request.workspaces = [];
   user = new User(_.pick(request.body,
       [
         'name', 'email', 'nickname', 'password', 'isAdmin', 'photoUrl',
-        'facebook_log'
+        'facebook_log', 'workspaces'
       ]
   ));
   await user.save();

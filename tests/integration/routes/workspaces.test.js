@@ -58,6 +58,9 @@ describe('/api/workspaces', ()=> {
     it('should return the asked workspace', async () => {
       const response = await execute();
 
+      console.log(response.body.creator);
+      console.log(response.body.admins);
+      console.log(response.body.users);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
