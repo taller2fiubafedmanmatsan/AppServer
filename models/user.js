@@ -16,7 +16,11 @@ const userSchema = mongoose.Schema({
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
   isAdmin: Boolean,
   photoUrl: String,
-  facebook_log: {type: Boolean, require: true}
+  facebook_log: {type: Boolean, require: true},
+  workspaces: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Workspace'
+  }]
 });
 
 userSchema.methods.getAuthToken = function() {
@@ -26,7 +30,7 @@ userSchema.methods.getAuthToken = function() {
   );
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema, 'users');
 
 function validateUser(user) {
   const schema = {
