@@ -49,12 +49,9 @@ router.post('/', [auth, usersExist], async (request, response) => {
       ]
   ));
 
-  await new Fawn.Task()
-      .save('workspaces', workspace)
-      .update('users', {_id: creator._id}, {
-        $addToSet: {workspaces: _.pick(workspace, ['_id'])}
-      })
-      .run();
+  savedWs = await workspace.save();
+  creator.workspaces.push(savedWs._id);
+  await creator.save();
 
   response.status(200).send(_.pick(workspace, [
     'name', 'imageUrl', 'location', 'creator', 'description',
