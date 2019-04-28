@@ -82,8 +82,7 @@ describe('/api/channels', ()=> {
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            '_id', 'name', 'welcomeMessage', 'description', 'users',
-            'isPrivate', 'creator'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
           ])
       );
     });

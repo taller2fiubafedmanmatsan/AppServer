@@ -65,7 +65,6 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         messages: [],
         number: 0
       });
-
       request.validChannel.pages = [page];
 
       const channel = new Channel(_.pick(request.validChannel, fields));
@@ -80,8 +79,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
       return response.status(200).send(_.pick(channel,
           [
-            '_id', 'name', 'welcomeMessage', 'description', 'users',
-            'isPrivate', 'creator'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
           ]));
     });
 
