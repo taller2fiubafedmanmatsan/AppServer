@@ -42,6 +42,7 @@ describe('/api/channels', ()=> {
     await User.remove({});
     await Workspace.remove({});
     await Page.remove({});
+    await Channel.remove({});
     await server.close();
   });
 
@@ -83,7 +84,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceName
+            description, welcomeMessage
           });
     };
 
@@ -159,7 +160,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceName
+            description, welcomeMessage
           });
     };
 
@@ -213,27 +214,20 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceName
+            description, welcomeMessage
           });
     };
 
     beforeEach(async ()=> {
-      name = 'channelName';
+      name = 'channelName2';
       creator = userEmail;
       users = [userEmail];
       isPrivate = true;
-      description = 'a';
-      welcomeMessage = 'a';
+      description = 'a2';
+      welcomeMessage = 'a2';
       workspaceName = workspace.name;
       await createChannel();
-      myChannel = await Channel.findOne({name: 'channelName'});
-    });
-
-    afterEach(async ()=> {
-      await Channel.remove({});
-      workspace = await Workspace.findByIdAndUpdate(workspace._id,
-          {channels: []},
-          {new: true});
+      myChannel = await Channel.findOne({name: 'channelName2'});
     });
 
     const execute = ()=> {
@@ -243,10 +237,11 @@ describe('/api/channels', ()=> {
     };
 
     it('should return the channel is request is valid', async () => {
+      const chName = myChannel.name;
       const response = await execute();
 
       expect(response.status).toBe(200);
-      expect(response.body[0].name).toEqual(myChannel.name);
+      expect(response.body[0].name).toEqual(chName);
     });
   });
 
@@ -269,7 +264,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage, workspaceName
+            description, welcomeMessage
           });
     };
 

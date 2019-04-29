@@ -1,5 +1,6 @@
 const express = require('express');
 const users = require('../routes/users');
+const messages = require('../routes/messages');
 const workspaces = require('../routes/workspaces');
 const channels = require('../routes/channels');
 const rootFile = require('../routes/root');
@@ -15,6 +16,7 @@ module.exports = function(app) {
   app.use('/', rootFile);
   app.use('/api/users', users);
   app.use('/api/auth', auth);
+  app.use('/api/messages', messages);
   app.use('/api/workspaces', workspaces);
   app.use('/api/channels', channels);
   app.use(error);

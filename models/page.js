@@ -18,5 +18,11 @@ function validatePage(page) {
   return Joi.validate(page, schema);
 };
 
+function isFull(page) {
+  return page.messages.length >= 50;
+}
+
 exports.Page = Page;
 exports.validatePage = validatePage;
+exports.pageSchema = pageSchema;
+exports.isFull = isFull;
