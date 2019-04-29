@@ -18,8 +18,8 @@ function transformRequest(users, req) {
   );
 
   validWorkspace.creator = selectUser(users, req.body.creator)[0];
-  validWorkspace.users = selectUser(users, req.body.admins);
-  validWorkspace.admins = selectUser(users, req.body.users);
+  validWorkspace.users = selectUser(users, req.body.users);
+  validWorkspace.admins = selectUser(users, req.body.admins);
 
   req.validWorkspace = validWorkspace;
 };
