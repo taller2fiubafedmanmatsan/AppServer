@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
-    "test": "jest --watchAll --verbose --coverage --runInBand",
+    "test": "jest --watchAll --verbose --coverage --runInBand --detectOpenHandles",
     "start": "node index.js",
     "debug": "node --debug-brk=30547 --no-lazy ./node_modules/jest/bin/jest.js -i"
   },
@@ -26,6 +26,7 @@
     "joi-objectid": "^2.0.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.4.19",
+    "mongoose-transactions": "^1.1.1",
     "nodemailer": "^6.0.0",
     "randomstring": "^1.1.5",
     "read-yaml": "^1.1.0",

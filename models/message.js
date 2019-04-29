@@ -16,7 +16,7 @@ const Message = mongoose.model('Message', messageSchema);
 
 function validateMessage(message) {
   const schema = {
-    user: Joi.objectId(),
+    creator: Joi.string().email(),
     text: Joi.string().min(1).required()
   };
   return Joi.validate(message, schema);

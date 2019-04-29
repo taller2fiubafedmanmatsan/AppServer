@@ -26,10 +26,23 @@ const Channel = mongoose.model('Channel', channelSchema);
 
 function validateChannel(channel) {
   const schema = {
+    name: Joi.string().min(1).max(50).required(),
+    pages: Joi.array().items(Joi.objectId()),
+    users: Joi.array().items(Joi.string().trim().email()).required(),
+    creator: Joi.string().trim().email(),
+    isPrivate: Joi.boolean(),
+    description: Joi.string().min(1).max(250),
+    welcomeMessage: Joi.string().min(1).max(250)
+  };
+  return Joi.validate(channel, schema);
+};
+
+function validateChannelUpdate(channel) {
+  const schema = {
     name: Joi.string().min(1).max(50),
-    pages: Joi.array().items(Joi.objectId()).required(),
-    users: Joi.array().items(Joi.objectId()).required(),
-    creator: Joi.objectId().required(),
+    pages: Joi.array().items(Joi.objectId()),
+    users: Joi.array().items(Joi.string().email()),
+    creator: Joi.objectId(),
     isPrivate: Joi.boolean(),
     description: Joi.string().min(1).max(250),
     welcomeMessage: Joi.string().min(1).max(250)
@@ -39,4 +52,5 @@ function validateChannel(channel) {
 
 exports.Channel = Channel;
 exports.validateChannel = validateChannel;
+exports.validateChannelUpdate = validateChannelUpdate;
 exports.channelSchema = channelSchema;
