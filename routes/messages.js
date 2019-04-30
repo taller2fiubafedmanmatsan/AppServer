@@ -7,6 +7,7 @@ const _ = require('lodash');
 const {Workspace} = require('../models/workspace');
 const {Channel} = require('../models/channel');
 const {Page, isFull} = require('../models/page');
+// const {User} = require('../models/user');
 const {
   Message,
   validateMessage,
@@ -117,28 +118,16 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       }
 
       const topic = `${request.workspace.name}-${channel.name}`;
-      const sender = await User.findById(request.user._id);
+      // const sender = await User.findById(request.user._id);
       const fbMessage = {
         data: {
-          msg: message.text,
-          createdAt: message.dateTime,
-          sender: {
-            name: sender.name,
-            email: sender.email,
-            nickname: sender.nickname,
-            isAdmin: sender.isAdmin
-          }
+          msg: message.text
         },
         topic: topic
       };
 
-      admin.messaging().send(fbMessage)
-          .then((response) => {
-            console.log('Successfully sent message:', response);
-          })
-          .catch((error) => {
-            console.log('Error sending message:', error);
-          });
+      const fbResponse = await admin.messaging().send(fbMessage);
+      console.log('Successfully sent message:', fbResponse);
 
       return response.status(200).send(
           _.pick(message, ['_id', 'text', 'dateTime', 'creator']));
