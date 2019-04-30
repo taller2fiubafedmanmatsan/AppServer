@@ -12,6 +12,17 @@ const {
   validateMessageUpdate
 } = require('../models/message');
 
+// Integración con firebase
+// PD: Es tremendamente inseguro esto pero bueno
+var admin = require("firebase-admin");
+var serviceAccount = require("../firebase_key_sdk.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://androidapp-bf64b.firebaseio.com"
+});
+// ---------------------------------------------
+
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
       .populate('channels', '-__v');
@@ -32,6 +43,45 @@ router.param('channelName', async (request, response, next, channelName) => {
   request.channel = channel;
   next();
 });
+
+// Enviar esto si es correcto el post de un mensaje
+/*    var topic = 'channel-topic';
+
+    var message = {
+      data: {
+        msg: 'Hola ameo'
+      },
+      topic: topic
+    };
+    
+    // Send a message to devices subscribed to the provided topic.
+    admin.messaging().send(message)
+      .then((response) => {
+        // Response is a message ID string.
+        console.log('Successfully sent message:', response);
+      })
+      .catch((error) => {
+        console.log('Error sending message:', error);
+      });
+*/
+// Si funciona, necesito que implementen algo asi para los mensajes
+/*    
+    var topic = :workspace_name + '-' + :channel_name
+
+    var message = {
+      data: {
+        msg: message,
+        createdAt: timestamp,
+        sender: {
+          name: userName,
+          email: userEmail,
+          nickname: userNickname,
+          isAdmin: boolean
+        }
+      },
+      topic: topic
+    };
+*/
 
 router.post('/workspace/:workspaceName/channel/:channelName', auth,
     async (request, response) => {
