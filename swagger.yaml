@@ -81,6 +81,11 @@ paths:
       operationId: ""
       produces:
       - "json"
+      parameters:
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
       responses:
         200:
           description: ""
@@ -113,6 +118,10 @@ paths:
         name: "body"
         description: "Creates user object"
         required: true
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
         schema:
           type: "object"
           properties:
@@ -137,7 +146,7 @@ paths:
                 type: "string"
         400:
           description: "name/email/facebook_log/isAdmin is not allowed."
-          
+
   /api/users/restorepassword:
     post:
       tags:
@@ -171,7 +180,7 @@ paths:
           description: "Invalid email."
         500:
           description: "Internal server error"
-          
+
   /api/auth/singin:
     post:
       tags:
@@ -203,7 +212,438 @@ paths:
 
         400:
           description: "Bad request. or Invalid email or password."
+  /api/workspaces/{wsname}:
+    get:
+      tags:
+      - "Workspaces"
+      summary: "Get a workspace by its name"
+      description: ""
+      operationId: ""
+      parameters:
+      - in: "path"
+        name: wsname
+        type: "string"
+        required: true
+        description: "The workspace name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: ""
+          schema:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+              imageUrl:
+                type: "string"
+              location:
+                type: "string"
+              creator:
+                type: "string"
+              description:
+                type: "string"
+              welcomeMessage:
+                type: "string"
+              channels:
+                type: "array"
+                items:
+                  type: "string"
+              users:
+                type: "array"
+                items:
+                  type: "string"
+              admins:
+                type: "array"
+                items:
+                  type: "string"
+        404:
+          description: "Workspace not found."
+        401:
+          description: "Access denied. No token provided."
 
+
+  /api/workspaces:
+    post:
+      tags:
+      - "Workspaces"
+      summary: "Creates a new workspace"
+      description: "Allows the user to create a new workspace specifying at least its name, users, admins and creator"
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+      - in: "body"
+        name: "body"
+        description: "Creates workspace Object"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+              required: true
+            imageUrl:
+              type: "string"
+              required: false
+            location:
+              type: "string"
+              required: false
+            creator:
+              type: "string"
+              required: true
+            description:
+              type: "string"
+              required: false
+            welcomeMessage:
+              type: "string"
+              required: false
+            channels:
+              type: "array"
+              items:
+                type: "string"
+              required: false
+            users:
+              type: "array"
+              items:
+                type: "string"
+              required: false
+            admins:
+              type: "array"
+              items:
+                type: "string"
+              required: false
+
+      responses:
+        200:
+          description: ""
+          schema:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+              imageUrl:
+                type: "string"
+              location:
+                type: "string"
+              creator:
+                type: "string"
+              description:
+                type: "string"
+              welcomeMessage:
+                type: "string"
+              channels:
+                type: "array"
+                items:
+                  type: "string"
+              users:
+                type: "array"
+                items:
+                  type: "string"
+              admins:
+                type: "array"
+                items:
+                  type: "string"
+        400:
+          description: "Workspace already registered."
+        401:
+          description: "Access denied. No token provided."
+
+
+  /api/channels/{channelName}/workspace/{workspaceName}:
+    get:
+      tags:
+      - "Channels"
+      summary: "Gets a channel by its name and its workspace name"
+      description: ""
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: channelName
+        type: "string"
+        required: true
+        description: "The channel name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+
+      responses:
+        200:
+          description: ""
+          schema:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+            isPrivate:
+              type: "boolean"
+            creator:
+              type: "object"
+              properties:
+                _id:
+                  type: "string"
+                name:
+                  type: "string"
+                email:
+                  type : "string"
+
+            _id:
+              type: "string"
+            pages:
+              type: "array"
+              items:
+                type: "string"
+            users:
+              type: "array"
+              items:
+                type: "string"
+        401:
+          description: "Access denied. No token provided."
+        403:
+          description: "The user cannot see messages  from this channel."
+
+
+  /api/channels/workspace/{workspace}:
+    get:
+      tags:
+      - "Channels"
+      summary: "Gets every channel of a given workspace"
+      description: ""
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: workspaceName
+        type: "string"
+        required: true
+        description: "The workspace name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+
+      responses:
+        200:
+          description: ""
+          schema:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+                name:
+                  type: "string"
+                isPrivate:
+                  type: "boolean"
+                creator:
+                  type: "string"
+
+                _id:
+                  type: "string"
+                pages:
+                  type: "array"
+                  items:
+                    type: "string"
+                users:
+                  type: "array"
+                  items:
+                    type: "string"
+
+        401:
+          description: "Access denied. No token provided."
+
+
+  /api/channels/workspace/{workspaceName}:
+    post:
+      tags:
+      - "Channels"
+      summary: "Creates a new channel"
+      description: "Allows the user to create a new channel specifying at least its name, creator and users"
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: workspaceName
+        type: "string"
+        required: true
+        description: "The workspace name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+      - in: "body"
+        name: "body"
+        description: "Creates channel Object"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+              required: true
+            isPrivate:
+              type: "boolean"
+              required: false
+            creator:
+              type: "string"
+              required: true
+            description:
+              type: "string"
+              required: false
+            welcomeMessage:
+              type: "string"
+              required: false
+            pages:
+              type: "array"
+              items:
+                type: "string"
+              required: false
+            users:
+              type: "array"
+              items:
+                type: "string"
+              required: true
+
+      responses:
+        200:
+          description: ""
+          schema:
+          type: "object"
+          properties:
+            _id:
+              type: "string"
+            name:
+              type: "string"
+            isPrivate:
+              type: "boolean"
+            description:
+              type: "string"
+            welcomeMessage:
+              type: "string"
+              items:
+                type: "string"
+
+        400:
+          description: "Channel already registered."
+        401:
+          description: "Access denied. No token provided."
+        403:
+          description: "The user cannot create channels in this workspace."
+
+  /api/channels/{channelName}/addUsers:
+    patch:
+      tags:
+      - "Channels"
+      summary: "Adds a member to a channel"
+      description: "Allows a member of a channel to invite another user"
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: channelName
+        type: "string"
+        required: true
+        description: "The channel name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            creator:
+              type: "string"
+            required: true
+            users:
+              type: "array"
+              items:
+                type: "string"
+              required: true
+
+      responses:
+        200:
+          description: ""
+          schema:
+          type: "object"
+          properties:
+            users:
+              type: "array"
+              items:
+                type: "string"
+              required: true
+
+        401:
+          description: "Access denied. No token provided."
+        403:
+          description: "The user cannot add users to this channel."
+
+  /api/messages/workspace/{workspaceName}/channel/{channelName}:
+    post:
+      tags:
+      - "Messages"
+      summary: "Sends a message to a channel"
+      description: "Stores a new message in a channel's page"
+      operationId: ""
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: channelName
+        type: "string"
+        required: true
+        description: "The channel name"
+      - in: header
+        name: x-auth-token
+        description: "auth token"
+        required: true
+      - in: "body"
+        name: "body"
+        description: "Creates message Object"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            text:
+              type: "string"
+              required: true
+            creator:
+              type: "string"
+              required: true
+      responses:
+        200:
+          description: ""
+          schema:
+          type: "object"
+          properties:
+            _id:
+              type: "string"
+            text:
+              type: "string"
+            dateTime:
+              type: "string"
+            creator:
+              type: "string"
+        401:
+          description: "Access denied. No token provided."
+        403:
+          description: "The user doesn't belong to this channel."
+          
 securityDefinitions:
   api_key:
     type: "apiKey"
