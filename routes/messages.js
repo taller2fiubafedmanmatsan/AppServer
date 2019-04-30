@@ -14,12 +14,12 @@ const {
 
 // Integración con firebase
 // PD: Es tremendamente inseguro esto pero bueno
-var admin = require("firebase-admin");
-var serviceAccount = require("../firebase_key_sdk.json");
+const admin = require('firebase-admin');
+const serviceAccount = require('../firebase_key_sdk.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://androidapp-bf64b.firebaseio.com"
+  databaseURL: 'https://androidapp-bf64b.firebaseio.com'
 });
 // ---------------------------------------------
 
@@ -53,7 +53,7 @@ router.param('channelName', async (request, response, next, channelName) => {
       },
       topic: topic
     };
-    
+
     // Send a message to devices subscribed to the provided topic.
     admin.messaging().send(message)
       .then((response) => {
@@ -65,7 +65,7 @@ router.param('channelName', async (request, response, next, channelName) => {
       });
 */
 // Si funciona, necesito que implementen algo asi para los mensajes
-/*    
+/*
     var topic = :workspace_name + '-' + :channel_name
 
     var message = {
