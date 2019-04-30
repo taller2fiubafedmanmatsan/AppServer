@@ -403,7 +403,24 @@ paths:
             pages:
               type: "array"
               items:
-                type: "string"
+                type: "object"
+                properties:
+                  _id:
+                    type: "string"
+                  messages:
+                    type: "object"
+                    properties:
+                      _id:
+                        type: "string"
+                      dateTime:
+                        type: "string"
+                      creator:
+                        type: "string"
+                      text:
+                        type: "string"
+                  number:
+                    type: "number"
+
             users:
               type: "array"
               items:
@@ -643,7 +660,7 @@ paths:
           description: "Access denied. No token provided."
         403:
           description: "The user doesn't belong to this channel."
-          
+    
 securityDefinitions:
   api_key:
     type: "apiKey"
