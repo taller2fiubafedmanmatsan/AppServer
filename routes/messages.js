@@ -1,5 +1,6 @@
 const Transaction = require('mongoose-transactions');
 const express = require('express');
+const admin = require('firebase-admin');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const _ = require('lodash');
@@ -14,7 +15,7 @@ const {
 
 // Integración con firebase
 // PD: Es tremendamente inseguro esto pero bueno
-const admin = require('firebase-admin');
+
 const serviceAccount = require('../firebase_key_sdk.json');
 
 admin.initializeApp({
@@ -114,6 +115,31 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       if (!finishedCreationTransaction(channel, page, message)) {
         return response.status(500).send('Transaction could not be completed');
       }
+
+      const topic = `${request.workspace.name}-${channel.name}`;
+      const sender = await User.findById(request.user._id);
+      const fbMessage = {
+        data: {
+          msg: message.text,
+          createdAt: message.dateTime,
+          sender: {
+            name: sender.name,
+            email: sender.email,
+            nickname: sender.nickname,
+            isAdmin: sender.isAdmin
+          }
+        },
+        topic: topic
+      };
+
+      admin.messaging().send(fbMessage)
+          .then((response) => {
+            console.log('Successfully sent message:', response);
+          })
+          .catch((error) => {
+            console.log('Error sending message:', error);
+          });
+
       return response.status(200).send(
           _.pick(message, ['_id', 'text', 'dateTime', 'creator']));
     });
