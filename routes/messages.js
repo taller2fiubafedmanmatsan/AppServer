@@ -117,7 +117,8 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         return response.status(500).send('Transaction could not be completed');
       }
 
-      const topic = `${request.workspace.name}-${channel.name}`;
+      // const topic = `${request.workspace.name}-${channel.name}`;
+      const topic = `channel-topic`;
       // const sender = await User.findById(request.user._id);
       const fbMessage = {
         data: {
