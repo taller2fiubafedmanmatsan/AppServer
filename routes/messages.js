@@ -7,7 +7,6 @@ const _ = require('lodash');
 const {Workspace} = require('../models/workspace');
 const {Channel} = require('../models/channel');
 const {Page, isFull} = require('../models/page');
-// const {User} = require('../models/user');
 const {
   Message,
   validateMessage,
@@ -119,7 +118,6 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
 
       // const topic = `${request.workspace.name}-${channel.name}`;
       const topic = `channel-topic`;
-      // const sender = await User.findById(request.user._id);
       const fbMessage = {
         data: {
           msg: message.text
