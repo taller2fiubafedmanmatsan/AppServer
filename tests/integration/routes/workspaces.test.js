@@ -170,7 +170,6 @@ describe('/api/workspaces', ()=> {
 
   describe('PATCH /:wsname', ()=> {
     let name;
-    let users;
     let myWorkspace;
 
     const createWorkspace = ()=> {
@@ -185,7 +184,6 @@ describe('/api/workspaces', ()=> {
 
     beforeEach(async ()=> {
       name = 'workspaceName';
-      users = [];
       await createWorkspace();
       myWorkspace = await Workspace.findOne({name: name});
     });
@@ -212,8 +210,8 @@ describe('/api/workspaces', ()=> {
       const usersEmails = updatedWorkspace.users.map((user) => {
         return user.email;
       });
-      users.push(userEmail);
-      expect(usersEmails).toEqual(expect.arrayContaining(users));
+      expect(usersEmails.includes(secondUserEmail)).toBe(true);
+      // expect(usersEmails).toEqual(expect.arrayContaining(users));
     });
 
     it('should return 404 if workspace is invalid', async () => {
