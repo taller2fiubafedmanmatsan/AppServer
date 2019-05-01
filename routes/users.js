@@ -74,8 +74,9 @@ router.put('/me', auth, async (request, response) => {
 });
 
 router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
+  console.log(request.params);
   const user = await User.findByIdAndUpdate(request.user._id,
-      _.pick(request.params, ['fbToken']),
+      {fireBaseToken: request.params.fbToken},
       {new: true});
 
   let fbResponse;
