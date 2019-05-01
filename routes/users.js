@@ -78,9 +78,11 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
       _.pick(request.params, ['fbToken']),
       {new: true});
 
-  const fbResponse = await admin.messaging()
-      .subscribeToTopic(user.fireBaseToken, user.topics);
-  console.log('Successfully subscribed to topic:', fbResponse);
+  if (user.topics && user.topics.lenght > 0) {
+    const fbResponse = await admin.messaging()
+        .subscribeToTopic(user.fireBaseToken, user.topics);
+    console.log('Successfully subscribed to topic:', fbResponse);
+  };
 
   response.status(200).send(fbResponse);
 });
