@@ -224,7 +224,7 @@ describe('/api/workspaces', ()=> {
       expect(response.text).toEqual('Workspace not found.');
     });
 
-    it('should return 400 if workspace is invalid', async () => {
+    it('should return 400 if user is in the workspace already', async () => {
       const response = await execute(token);
       expect(response.status).toBe(400);
       const msg = 'The user is already a member of this workspace';
