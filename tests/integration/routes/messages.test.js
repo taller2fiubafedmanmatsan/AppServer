@@ -20,8 +20,7 @@ describe('/api/messages', ()=> {
         .post('/api/users')
         .send({name: 'name',
           email: userEmail,
-          password: 'password',
-          nickname: 'nick'
+          password: 'password'
         });
   };
 

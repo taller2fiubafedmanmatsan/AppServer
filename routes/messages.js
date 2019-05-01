@@ -115,11 +115,11 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         data: {
           msg: message.text,
           createdAt: message.dateTime.toString(),
-          workspace: workspace.name.toString(),
-          channel: channel.name.toString(),
-          sender_name: sender.name.toString(),
-          sender_email: sender.email.toString(),
-          sender_nickname: sender.nickname.toString()
+          workspace: workspace.name,
+          channel: channel.name,
+          sender_name: sender.name,
+          sender_email: sender.email,
+          sender_nickname: sender.nickname || ''
         },
         topic: topic
       };
