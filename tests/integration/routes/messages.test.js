@@ -88,7 +88,7 @@ describe('/api/messages', ()=> {
       await Message.remove({});
     });
 
-    const execute = () => {
+    const execute = (token) => {
       const chUrl = `channel/${channel.name}`;
       const wsUrl = `workspace/${workspace.name}`;
       return request(server)
@@ -98,7 +98,7 @@ describe('/api/messages', ()=> {
     };
 
     it('should return the message if the request is valid', async () => {
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
@@ -116,16 +116,15 @@ describe('/api/messages', ()=> {
 
     it('should return 400 if text is missing', async ()=> {
       text = null;
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(400);
     });
 
     it('should return 403 if the user is not in the channel', async ()=> {
-      text = null;
       const response = await execute(secondToken);
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(403);
     });
   });
 });
