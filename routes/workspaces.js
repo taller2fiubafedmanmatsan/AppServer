@@ -40,10 +40,7 @@ router.post('/', [auth, usersExist], async (request, response) => {
     return user._id;
   });
   ws.users = request.validWorkspace.users.map((user) => {
-    return {
-      _id: user._id,
-      name: user.name
-    };
+    return _.pick(user, '_id', 'name');
   });
 
   workspace = new Workspace(_.pick(ws,
