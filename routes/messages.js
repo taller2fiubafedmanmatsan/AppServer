@@ -7,6 +7,7 @@ const _ = require('lodash');
 const {Workspace} = require('../models/workspace');
 const {Channel} = require('../models/channel');
 const {Page, isFull} = require('../models/page');
+const {User} = require('../models/user');
 const {
   Message,
   validateMessage,
@@ -80,6 +81,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       const {error} = validateMessage(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
+      const workspace = request.workspace;
       const channel = request.channel;
       if (!request.channel.users.some((user) => user._id == request.user._id)) {
         return response.status(403)
@@ -106,11 +108,20 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         return response.status(500).send('Transaction could not be completed');
       }
 
+      const sender = User.findById(request.user._id);
       const topic = `${request.workspace.name}-${channel.name}`;
-      // const topic = `channel-topic`;
+
       const fbMessage = {
         data: {
-          msg: message.text
+          msg: message.text,
+          createdAt: timestamp.toString(),
+          workspace: workspace.name,
+          channel: channel.name,
+          sender: {
+            name: sender.name,
+            email: sender.email,
+            nickname: sender.nickname
+          }
         },
         topic: topic
       };
