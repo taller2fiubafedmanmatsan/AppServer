@@ -185,8 +185,7 @@ describe('/api/workspaces', ()=> {
 
     beforeEach(async ()=> {
       name = 'workspaceName';
-      users = [userEmail];
-      isPrivate = true;
+      users = [];
       await createWorkspace();
       myWorkspace = await Workspace.findOne({name: name});
     });
@@ -219,16 +218,9 @@ describe('/api/workspaces', ()=> {
 
     it('should return 404 if workspace is invalid', async () => {
       myWorkspace.name = null;
-      const response = await execute(secondToken);
+      const response = await execute(token);
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Workspace not found.');
-    });
-
-    it('should return 400 if user is in the workspace already', async () => {
-      const response = await execute(token);
-      expect(response.status).toBe(400);
-      const msg = 'The user is already a member of this workspace';
-      expect(response.text).toEqual(msg);
     });
   });
 });
