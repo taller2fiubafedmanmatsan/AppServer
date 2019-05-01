@@ -1,5 +1,6 @@
 const express = require('express');
 const Transaction = require('mongoose-transactions');
+const admin = require('firebase-admin');
 const _ = require('lodash');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
@@ -91,6 +92,11 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (!finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
+
+      users.forEach(async (user) => {
+        await admin.messaging()
+            .subscribeToTopic(user.fireBaseToken, newTopic);
+      });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
