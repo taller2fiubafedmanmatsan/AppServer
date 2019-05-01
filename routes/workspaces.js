@@ -60,4 +60,21 @@ router.post('/', [auth, usersExist], async (request, response) => {
   ]));
 });
 
+router.patch('/:wsname', auth, async (request, response) => {
+  let workspace = await Workspace.findOne({name: request.params.wsname})
+      .populate('users', 'name');
+
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  if (workspace.users.some((user) => user._id == request.user._id)) {
+    const message = 'The user is already a member of this workspace';
+    return response.status(400).send(message);
+  }
+
+  workspace.users.push(request.user._id);
+  workspace = await Workspace.findByIdAndUpdate(workspace._id, workspace,
+      {new: true});
+  response.status(200).send(_.pick(workspace, ['name']));
+});
+
 module.exports = router;
