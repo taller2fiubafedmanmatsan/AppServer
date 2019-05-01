@@ -6,6 +6,8 @@ const auth = require('../middleware/auth');
 const mailer = require('../mailer/password_restoration_mail');
 const randomstring = require('randomstring');
 
+const admin = require('firebase-admin');
+
 const {
   User,
   validate,
@@ -69,6 +71,18 @@ router.put('/me', auth, async (request, response) => {
         'name', 'email', 'nickname', 'photoUrl'
       ]
   ));
+});
+
+router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
+  const user = await User.findByIdAndUpdate(request.user._id,
+      _.pick(request.params, ['fbToken']),
+      {new: true});
+
+  const fbResponse = await admin.messaging()
+      .subscribeToTopic(user.fireBaseToken, user.topics);
+  console.log('Successfully subscribed to topic:', fbResponse);
+
+  response.status(200).send(fbResponse);
 });
 
 router.post('/restorepassword', async (request, response) => {

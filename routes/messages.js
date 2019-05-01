@@ -13,16 +13,6 @@ const {
   validateMessageUpdate
 } = require('../models/message');
 
-// Integración con firebase
-// PD: Es tremendamente inseguro esto pero bueno
-
-const serviceAccount = require('../firebase_key_sdk.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://androidapp-bf64b.firebaseio.com'
-});
-// ---------------------------------------------
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
@@ -116,8 +106,8 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         return response.status(500).send('Transaction could not be completed');
       }
 
-      // const topic = `${request.workspace.name}-${channel.name}`;
-      const topic = `channel-topic`;
+      const topic = `${request.workspace.name}-${channel.name}`;
+      // const topic = `channel-topic`;
       const fbMessage = {
         data: {
           msg: message.text

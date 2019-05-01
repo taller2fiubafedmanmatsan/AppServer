@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
 const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
+const {User} = require('../models/user');
 
 const router = express.Router();
 
@@ -83,7 +84,11 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
       workspace.channels.push(channel._id);
 
-      if (!finishedCreationTransaction(workspace, channel, page)) {
+      const newTopic = `${workspace.name}-${channel.name}`;
+      const users = request.validChannel.users;
+      users.forEach((user) => user.topics.push(newTopic));
+
+      if (!finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
       return response.status(200).send(_.pick(channel,
@@ -150,11 +155,14 @@ router.patch('/:channelName/addUsers', [auth, channelTransform],
       return response.status(200).send(_.pick(channel, fields));
     });
 
-async function finishedCreationTransaction(workspace, channel, page) {
+async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
+  users.forEach((user) => {
+    return transaction.update(User.modelName, user._id, user);
+  });
 
   try {
     await transaction.run();
