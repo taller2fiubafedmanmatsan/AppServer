@@ -71,8 +71,8 @@ router.patch('/:wsname', auth, async (request, response) => {
     return response.status(400).send(message);
   }
 
-  workspace.users.push(request.user._id);
-  workspace = await Workspace.findByIdAndUpdate(workspace._id, workspace,
+  workspace = await Workspace.findByIdAndUpdate(workspace._id,
+      {$addToSet: {users: request.user._id}},
       {new: true});
   response.status(200).send(_.pick(workspace, ['name']));
 });
