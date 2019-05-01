@@ -245,7 +245,7 @@ describe('/api/channels', ()=> {
     });
   });
 
-  describe('PATCH /:channelName/addUsers', () => {
+  describe('PATCH /:channelName/workspace/:workspaceName/addUsers', () => {
     let name;
     let creator;
     let users;
@@ -290,8 +290,10 @@ describe('/api/channels', ()=> {
     });
 
     const execute = ()=> {
+      const chUrl = `channels/${myChannel.name}`;
+      const wsUrl = `workspace/${workspaceName}`;
       return request(server)
-          .patch(`/api/channels/${myChannel.name}/addUsers`)
+          .patch(`/api/${chUrl}/${wsUrl}/addUsers`)
           .set('x-auth-token', token)
           .send({creator, users});
     };
@@ -300,6 +302,7 @@ describe('/api/channels', ()=> {
       users = [user2.email, user3.email];
       const response = await execute();
 
+      console.log(response.text);
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');
       expect(response.status).toBe(200);
