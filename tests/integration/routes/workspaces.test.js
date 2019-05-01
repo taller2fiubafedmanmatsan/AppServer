@@ -6,10 +6,13 @@ let server;
 
 describe('/api/workspaces', ()=> {
   let token;
+  let secondToken;
   const userEmail = 'user@test.com';
+  const secondUserEmail = 'seconduser@test.com';
   let user;
+  let secondUser;
 
-  const createUser = ()=> {
+  const createUser = (userEmail)=> {
     return request(server)
         .post('/api/users')
         .send({name: 'name', email: userEmail, password: 'password'});
@@ -17,9 +20,12 @@ describe('/api/workspaces', ()=> {
 
   beforeAll(async ()=> {
     server = require('../../../index');
-    await createUser();
+    await createUser(userEmail);
     user = await User.findOne({email: userEmail});
     token = user.getAuthToken();
+    await createUser(secondUserEmail);
+    secondUser = await User.findOne({email: secondUserEmail});
+    secondToken = secondUser.getAuthToken();
   });
 
   afterAll(async ()=> {
@@ -159,6 +165,70 @@ describe('/api/workspaces', ()=> {
 
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Invalid users.');
+    });
+  });
+
+  describe('PATCH /:wsname', ()=> {
+    let name;
+    let users;
+    let myWorkspace;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail, admins: [userEmail],
+            users: [userEmail], description: 'a', welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      users = [userEmail];
+      isPrivate = true;
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterAll(async ()=> {
+      await Workspace.remove({});
+      await User.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .patch(`/api/workspaces/${myWorkspace.name}`)
+          .set('x-auth-token', token)
+          .send();
+    };
+
+    it('should add the new user to the workspace', async () => {
+      const response = await execute(secondToken);
+
+      const updatedWorkspace = await Workspace.findOne({name: myWorkspace.name})
+          .populate('users', 'email');
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedWorkspace.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.arrayContaining(users));
+    });
+
+    it('should return 404 if workspace is invalid', async () => {
+      myWorkspace.name = null;
+      const response = await execute(secondToken);
+      expect(response.status).toBe(404);
+      expect(response.text).toEqual('Workspace not found.');
+    });
+
+    it('should return 400 if workspace is invalid', async () => {
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+      const msg = 'The user is already a member of this workspace';
+      expect(response.text).toEqual(msg);
     });
   });
 });
