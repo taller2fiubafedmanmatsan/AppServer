@@ -16,22 +16,26 @@ const {
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
-      .populate('channels', '-id -__v');
+      .populate('channels', '-__v');
   if (!workspace) return response.status(404).send('Invalid workspace.');
 
+  if (request.params.channelName) {
+    const chId = workspace.channels.filter((ch) => {
+      if (ch.name === request.params.channelName) {
+        return ch._id;
+      }
+    });
+    const channel = await Channel.findById(chId)
+        .populate('pages', '-__v')
+        .populate('users', 'name nickname email')
+        .populate('creator', 'name nickname email');
+
+    if (!channel) return response.status(404).send('Invalid channel.');
+
+    request.channel = channel;
+  }
+
   request.workspace = workspace;
-  next();
-});
-
-router.param('channelName', async (request, response, next, channelName) => {
-  const channel = await Channel.findOne({name: channelName}).
-      populate('pages', '-__v')
-      .populate('users', 'name nickname email')
-      .populate('creator', 'name nickname email');
-
-  if (!channel) return response.status(404).send('Invalid channel.');
-
-  request.channel = channel;
   next();
 });
 
@@ -130,7 +134,8 @@ router.patch('/', auth, async (request, response) => {
   return response.status(200).send(_.pick(channel, fields));
 });
 
-router.patch('/:channelName/addUsers', [auth, channelTransform],
+router.patch('/:channelName/workspace/:workspaceName/addUsers',
+    [auth, channelTransform],
     async (request, response) => {
       const fields = ['users'];
 
@@ -146,6 +151,10 @@ router.patch('/:channelName/addUsers', [auth, channelTransform],
       channel = await Channel.findByIdAndUpdate(channel._id,
           {$addToSet: {users: users.map((user) => user._id)}},
           {new: true});
+
+      // users.forEach((user) => {
+      //   user.topics.push();
+      // });
 
       return response.status(200).send(_.pick(channel, fields));
     });
