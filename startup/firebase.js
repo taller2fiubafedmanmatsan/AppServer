@@ -9,4 +9,3 @@ module.exports = function() {
     databaseURL: 'https://androidapp-bf64b.firebaseio.com'
   });
 };
-// ---------------------------------------------

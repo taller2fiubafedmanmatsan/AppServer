@@ -1,9 +1,9 @@
 const express = require('express');
 const Transaction = require('mongoose-transactions');
-const admin = require('firebase-admin');
 const _ = require('lodash');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
+const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
 const {User} = require('../models/user');
@@ -98,8 +98,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
 
       users.forEach(async (user) => {
-        await admin.messaging()
-            .subscribeToTopic(user.fireBaseToken, newTopic);
+        await firebase.subscribeToTopic(user);
       });
       return response.status(200).send(_.pick(channel,
           [
@@ -163,9 +162,14 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers',
           {$addToSet: {users: users.map((user) => user._id)}},
           {new: true});
 
-      // users.forEach((user) => {
-      //   user.topics.push();
-      // });
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users.forEach(async (user) => {
+        if (!user.topics.includes(topic)) {
+          user.topics.push(topic);
+          await user.save();
+          await firebase.subscribeToTopic(user);
+        };
+      });
 
       return response.status(200).send(_.pick(channel, fields));
     });

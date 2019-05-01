@@ -1,12 +1,17 @@
 const request = require('supertest');
 const {User} = require('../../../models/user');
 const mailer = require('../../../mailer/password_restoration_mail');
+const firebase = require('../../../helpers/firebase_helper');
 
 let server;
 
 describe('/api/users', ()=> {
   beforeEach(()=> {
     server = require('../../../index');
+  });
+
+  beforeAll(()=> {
+    firebase.subscribeToTopic = jest.fn();
   });
 
   afterEach(async ()=> {

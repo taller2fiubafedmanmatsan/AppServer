@@ -1,9 +1,9 @@
 const Transaction = require('mongoose-transactions');
 const express = require('express');
-const admin = require('firebase-admin');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const _ = require('lodash');
+const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Channel} = require('../models/channel');
 const {Page, isFull} = require('../models/page');
@@ -108,26 +108,23 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         return response.status(500).send('Transaction could not be completed');
       }
 
-      const sender = User.findById(request.user._id);
+      const sender = await User.findById(request.user._id);
       const topic = `${request.workspace.name}-${channel.name}`;
 
       const fbMessage = {
         data: {
           msg: message.text,
-          createdAt: timestamp.toString(),
-          workspace: workspace.name,
-          channel: channel.name,
-          sender: {
-            name: sender.name,
-            email: sender.email,
-            nickname: sender.nickname
-          }
+          createdAt: message.dateTime.toString(),
+          workspace: workspace.name.toString(),
+          channel: channel.name.toString(),
+          sender_name: sender.name.toString(),
+          sender_email: sender.email.toString(),
+          sender_nickname: sender.nickname.toString()
         },
         topic: topic
       };
 
-      const fbResponse = await admin.messaging().send(fbMessage);
-      console.log('Successfully sent message:', fbResponse);
+      await firebase.sendMessageToTopic(fbMessage);
 
       return response.status(200).send(
           _.pick(message, ['_id', 'text', 'dateTime', 'creator']));

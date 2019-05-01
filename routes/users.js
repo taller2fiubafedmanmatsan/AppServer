@@ -5,8 +5,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const mailer = require('../mailer/password_restoration_mail');
 const randomstring = require('randomstring');
-
-const admin = require('firebase-admin');
+const firebase = require('../helpers/firebase_helper');
 
 const {
   User,
@@ -85,9 +84,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
 
   let fbResponse;
   if (user.topics && user.topics.lenght > 0) {
-    fbResponse = await admin.messaging()
-        .subscribeToTopic(user.fireBaseToken, user.topics);
-    console.log('Successfully subscribed to topic:', fbResponse);
+    await firebase.subscribeToTopic(user);
   };
 
   response.status(200).send(fbResponse);

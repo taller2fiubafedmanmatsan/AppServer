@@ -3,6 +3,7 @@ const {User} = require('../../../models/user');
 const {Workspace} = require('../../../models/workspace');
 const {Channel} = require('../../../models/channel');
 const {Page} = require('../../../models/page');
+const firebase = require('../../../helpers/firebase_helper');
 
 let server;
 
@@ -36,6 +37,7 @@ describe('/api/channels', ()=> {
     token = user.getAuthToken();
     await createWorkspace();
     workspace = await Workspace.findOne({name: 'WSname'});
+    firebase.subscribeToTopic = jest.fn();
   });
 
   afterAll(async ()=> {
@@ -53,7 +55,7 @@ describe('/api/channels', ()=> {
         {new: true});
   });
 
-  describe('POST /', () => {
+  describe('POST /workspace/:workspaceName', () => {
     let name;
     let creator;
     let users;
