@@ -92,6 +92,9 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       const newTopic = `${workspace.name}-${channel.name}`;
       const users = request.validChannel.users;
       users.forEach((user) => user.topics.push(newTopic));
+      users.forEach((user) => {
+        console.log(`user: ${user.name} in topics: ${user.topics}`);
+      });
 
       if (!finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
