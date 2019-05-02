@@ -96,7 +96,6 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         users.forEach(async (user) => {
           if (!user.topics.includes(newTopic)) {
             user.topics.push(newTopic);
-            await user.save();
             await firebase.subscribeToTopic(user, newTopic);
           };
           users.forEach((user) => {
@@ -106,7 +105,6 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       } else {
         if (!users.topics.includes(newTopic)) {
           users.topics.push(newTopic);
-          await users.save();
           await firebase.subscribeToTopic(users, newTopic);
           console.log(`user: ${users.name} in topics: ${users.topics}`);
         };

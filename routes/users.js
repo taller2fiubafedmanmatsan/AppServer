@@ -34,11 +34,12 @@ router.post('/', async (request, response) => {
 
   const salt = await bcrypt.genSalt(10);
   request.body.password = await bcrypt.hash(password, salt);
-  request.workspaces = [];
+  request.body.workspaces = [];
+  request.body.fireBaseToken = '';
   user = new User(_.pick(request.body,
       [
         'name', 'email', 'nickname', 'password', 'isAdmin', 'photoUrl',
-        'facebook_log', 'workspaces'
+        'facebook_log', 'workspaces', 'fireBaseToken'
       ]
   ));
   await user.save();
@@ -76,7 +77,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   console.log(request.params);
   const user = await User.findById(request.user._id);
   if (user.fireBaseToken && user.fireBaseToken == request.params.fbToken) {
-    response.status(200);
+    return response.status(200);
   }
 
   user.fireBaseToken = request.params.fbToken;
