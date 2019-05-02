@@ -84,7 +84,9 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
 
   let fbResponse;
   if (user.topics && user.topics.lenght > 0) {
-    await firebase.subscribeToTopic(user);
+    user.topics.forEach(async (topic) => {
+      await firebase.subscribeToTopic(user, topic);
+    });
   };
 
   response.status(200).send(fbResponse);

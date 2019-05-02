@@ -101,7 +101,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
 
       users.forEach(async (user) => {
-        await firebase.subscribeToTopic(user);
+        await firebase.subscribeToTopic(user, newTopic);
       });
       return response.status(200).send(_.pick(channel,
           [
@@ -172,7 +172,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           if (!user.topics.includes(topic)) {
             user.topics.push(topic);
             await user.save();
-            await firebase.subscribeToTopic(user);
+            await firebase.subscribeToTopic(user, topic);
           };
           users.forEach((user) => {
             console.log(`user: ${user.name} in topics: ${user.topics}`);
@@ -182,7 +182,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
         if (!users.topics.includes(topic)) {
           users.topics.push(topic);
           await users.save();
-          await firebase.subscribeToTopic(users);
+          await firebase.subscribeToTopic(users, topic);
           console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
