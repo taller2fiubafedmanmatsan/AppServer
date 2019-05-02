@@ -153,7 +153,8 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
 
       let channel = request.channel;
 
-      if (!channel.users.some((user) => user._id == request.user._id)) {
+      if (channel.isPrivate &&
+        !channel.users.some((user) => user._id == request.user._id)) {
         return response.status(403).send('The user cannot add users' +
                                           ' this channel');
       }
