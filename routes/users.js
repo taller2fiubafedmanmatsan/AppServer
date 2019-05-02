@@ -19,7 +19,7 @@ router.get('/me', auth, async (request, response) => {
       .populate('workspaces', 'name')
       .select('-password -__v');
 
-  response.status(200).send(user);
+  return response.status(200).send(user);
 });
 
 router.post('/', async (request, response) => {
@@ -46,7 +46,7 @@ router.post('/', async (request, response) => {
 
   const token = user.getAuthToken();
 
-  response.header('x-auth-token', token).status(200)
+  return response.header('x-auth-token', token).status(200)
       .send(_.pick(user, ['name', 'email']));
 });
 
@@ -66,7 +66,7 @@ router.put('/me', auth, async (request, response) => {
           ]
       ), {new: true});
 
-  response.status(200).send(_.pick(user,
+  return response.status(200).send(_.pick(user,
       [
         'name', 'email', 'nickname', 'photoUrl'
       ]
@@ -76,7 +76,7 @@ router.put('/me', auth, async (request, response) => {
 router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   console.log(request.params);
   const user = await User.findById(request.user._id);
-  if (user.fireBaseToken == request.params.fbToken) {
+  if (user.fireBaseToken === request.params.fbToken) {
     return response.status(200);
   }
   console.log(`Por guardar su nuevo token al user ${user.name}`);
@@ -89,7 +89,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
     });
   };
   console.log(`Todo genial updateando el fb token de ${user.name}`);
-  response.status(200);
+  return response.status(200);
 });
 
 router.post('/restorepassword', async (request, response) => {
@@ -108,7 +108,8 @@ router.post('/restorepassword', async (request, response) => {
 
   user.password = await bcrypt.hash(newPassword, salt);
   await user.save();
-  response.status(200).send(`New password sent to ${request.body.email}` );
+  return response.status(200)
+      .send(`New password sent to ${request.body.email}` );
 });
 
 module.exports = router;
