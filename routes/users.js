@@ -84,6 +84,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   await user.save();
 
   if (user.topics && user.topics.lenght > 0) {
+    console.log(`entre a mandat cosas a un topic: ${user.topics}`);
     user.topics.forEach(async (topic) => {
       await firebase.subscribeToTopic(user, topic);
     });
