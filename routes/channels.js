@@ -174,12 +174,16 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
             await user.save();
             await firebase.subscribeToTopic(user);
           };
+          users.forEach((user) => {
+            console.log(`user: ${user.name} in topics: ${user.topics}`);
+          });
         });
       } else {
         if (!users.topics.includes(topic)) {
           users.topics.push(topic);
           await users.save();
           await firebase.subscribeToTopic(users);
+          console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
 
