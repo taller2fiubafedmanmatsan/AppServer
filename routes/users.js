@@ -77,7 +77,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   console.log(request.params);
   const user = await User.findById(request.user._id);
   if (user.fireBaseToken === request.params.fbToken) {
-    return response.status(200);
+    return response.status(200).send(`Token updated.`);
   }
   console.log(`Por guardar su nuevo token al user ${user.name}`);
   user.fireBaseToken = request.params.fbToken;
@@ -90,7 +90,7 @@ router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
     });
   };
   console.log(`Todo genial updateando el fb token de ${user.name}`);
-  return response.status(200);
+  return response.status(200).send(`Token updated.`);
 });
 
 router.post('/restorepassword', async (request, response) => {
