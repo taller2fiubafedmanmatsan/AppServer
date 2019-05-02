@@ -144,12 +144,12 @@ router.patch('/', auth, async (request, response) => {
   return response.status(200).send(_.pick(channel, fields));
 });
 
-router.patch('/:channelName/workspace/:workspaceName/addUsers',
-    [auth, channelTransform],
+router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
     async (request, response) => {
       const fields = ['users'];
 
-      const users = request.validChannel.users;
+      const users = await User.find({email: {$in: request.body.users}});
+      if (!users) return response.status(400).send('No users where provided.');
 
       let channel = request.channel;
 
@@ -163,13 +163,21 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers',
           {new: true});
 
       const topic = `${request.workspace.name}-${channel.name}`;
-      users.forEach(async (user) => {
-        if (!user.topics.includes(topic)) {
-          user.topics.push(topic);
-          await user.save();
-          await firebase.subscribeToTopic(user);
+      if (Array.isArray(users)) {
+        users.forEach(async (user) => {
+          if (!user.topics.includes(topic)) {
+            user.topics.push(topic);
+            await user.save();
+            await firebase.subscribeToTopic(user);
+          };
+        });
+      } else {
+        if (!users.topics.includes(topic)) {
+          users.topics.push(topic);
+          await users.save();
+          await firebase.subscribeToTopic(users);
         };
-      });
+      }
 
       return response.status(200).send(_.pick(channel, fields));
     });
