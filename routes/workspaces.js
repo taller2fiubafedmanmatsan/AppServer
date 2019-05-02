@@ -1,7 +1,9 @@
 const express = require('express');
 const auth = require('../middleware/auth');
+const Transaction = require('mongoose-transactions');
 const usersExist = require('../middleware/existing_users');
 const {Workspace, validate} = require('../models/workspace');
+const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
@@ -61,7 +63,7 @@ router.post('/', [auth, usersExist], async (request, response) => {
 });
 
 router.patch('/:wsname', auth, async (request, response) => {
-  let workspace = await Workspace.findOne({name: request.params.wsname})
+  const workspace = await Workspace.findOne({name: request.params.wsname})
       .populate('users', 'name');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
@@ -71,10 +73,29 @@ router.patch('/:wsname', auth, async (request, response) => {
     return response.status(400).send(message);
   }
 
-  workspace = await Workspace.findByIdAndUpdate(workspace._id,
-      {$addToSet: {users: request.user._id}},
-      {new: true});
+  const user = await User.findById(request.user._id);
+  workspace.users.push(user._id);
+  user.workspaces.push(workspace._id);
+
+  if (! await finishedJoinTransaction(user, workspace)) {
+    return response.status(500).send(error);
+  }
   response.status(200).send(_.pick(workspace, ['name']));
 });
 
+async function finishedJoinTransaction(user, workspace) {
+  transaction = new Transaction();
+  transaction.update(Workspace.modelName, workspace._id, workspace);
+  transaction.update(User.modelName, user._id, user);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
 module.exports = router;
