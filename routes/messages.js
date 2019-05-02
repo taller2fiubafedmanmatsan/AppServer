@@ -113,10 +113,12 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
 
       const fbMessage = {
         data: {
+          msgId: message._id,
           msg: message.text,
           createdAt: message.dateTime.toISOString(),
           workspace: workspace.name,
           channel: channel.name,
+          sender_id: sender._id,
           sender_name: sender.name,
           sender_email: sender.email,
           sender_nickname: sender.nickname || ''
