@@ -76,21 +76,20 @@ router.put('/me', auth, async (request, response) => {
 router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   console.log(request.params);
   const user = await User.findById(request.user._id);
-  if (user.fireBaseToken && user.fireBaseToken == request.params.fbToken) {
+  if (user.fireBaseToken == request.params.fbToken) {
     return response.status(200);
   }
-
+  console.log(`Por guardar su nuevo token al user ${user.name}`);
   user.fireBaseToken = request.params.fbToken;
   await user.save();
 
-  let fbResponse;
   if (user.topics && user.topics.lenght > 0) {
     user.topics.forEach(async (topic) => {
       await firebase.subscribeToTopic(user, topic);
     });
   };
-
-  response.status(200).send(fbResponse);
+  console.log(`Todo genial updateando el fb token de ${user.name}`);
+  response.status(200);
 });
 
 router.post('/restorepassword', async (request, response) => {
