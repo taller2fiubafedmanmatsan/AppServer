@@ -13,9 +13,9 @@ Fawn.init(mongoose);
 
 router.get('/:wsname', auth, async (request, response) => {
   const workspace = await Workspace.findOne({name: request.params.wsname})
-      .populate('creator', 'name')
-      .populate('admins', 'name')
-      .populate('users', 'name')
+      .populate('creator', 'name email')
+      .populate('admins', 'name email')
+      .populate('users', 'name email')
       .populate('channels', 'name');
   if (!workspace) return response.status(404).send('Workspace not found.');
 

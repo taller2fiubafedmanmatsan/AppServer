@@ -22,6 +22,13 @@ router.get('/me', auth, async (request, response) => {
   return response.status(200).send(user);
 });
 
+router.get('/:userEmail', auth, async (request, response) => {
+  const user = await User.findOne({email: request.params.userEmail})
+      .select('name email nickname photoUrl -_id');
+
+  return response.status(200).send(user);
+});
+
 router.post('/', async (request, response) => {
   const {error} = validate(request.body);
   if (error) return response.status(400).send(error.details[0].message);

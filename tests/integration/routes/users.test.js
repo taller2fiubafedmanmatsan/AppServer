@@ -58,6 +58,59 @@ describe('/api/users', ()=> {
     });
   });
 
+  describe('GET /:userName', ()=> {
+    let user;
+    let name;
+    let email;
+    let email2;
+    let token;
+
+    const execute = ()=> {
+      return request(server)
+          .get(`/api/users/${email2}`)
+          .set('x-auth-token', token)
+          .send();
+    };
+
+    const createUser = (userEmail)=> {
+      return request(server)
+          .post('/api/users')
+          .send({
+            name: 'name', email: userEmail, password: 'password',
+            nickname: 'nick', photoUrl: 'https://bit.ly/2LpIl5N'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'name';
+      email = 'test@test.com';
+      email2 = 'test2@test.com';
+      password = 'password';
+      await createUser(email);
+      await createUser(email2);
+      user = await User.findOne({name});
+      token = user.getAuthToken();
+    });
+
+    it('should return 401 if client is not authenticated', async ()=> {
+      token = '';
+      const response = await execute();
+      expect(response.status).toBe(401);
+    });
+
+    it('should return the current user', async ()=> {
+      const response = await execute();
+
+      expect(response.status).toBe(200);
+      expect(response.body.email).toBe(email2);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            'name', 'email', 'nickname', 'photoUrl'
+          ])
+      );
+    });
+  });
+
   describe('POST /', ()=> {
     let name;
     let email;
