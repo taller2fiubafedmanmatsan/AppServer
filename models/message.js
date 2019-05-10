@@ -9,6 +9,7 @@ const messageSchema = mongoose.Schema({
     require: true
   },
   text: {type: String, minlenght: 1, require: true},
+  type: {type: String, minlenght: 1, require: true},
   dateTime: {type: Date, default: Date.now()}
 });
 
@@ -17,7 +18,8 @@ const Message = mongoose.model('Message', messageSchema);
 function validateMessage(message) {
   const schema = {
     creator: Joi.string().email(),
-    text: Joi.string().min(1).required()
+    text: Joi.string().min(1).required(),
+    type: Joi.string().min(1).required()
   };
   return Joi.validate(message, schema);
 };

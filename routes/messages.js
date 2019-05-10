@@ -80,7 +80,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
 
 router.post('/workspace/:workspaceName/channel/:channelName', auth,
     async (request, response) => {
-      const fields = ['creator', 'text'];
+      const fields = ['creator', 'text', 'type'];
       const {error} = validateMessage(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
@@ -92,7 +92,8 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       }
       const messageData = {
         text: request.body.text,
-        creator: request.user._id
+        creator: request.user._id,
+        type: request.body.type
       };
       const message = new Message(_.pick(messageData, fields));
 
@@ -118,6 +119,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         data: {
           msgId: message._id.toString(),
           msg: message.text,
+          msgType: message.type,
           createdAt: message.dateTime.toISOString(),
           workspace: workspace.name,
           channel: channel.name,
@@ -165,12 +167,7 @@ async function finishedCreationTransaction(channel, page, message) {
   transaction = new Transaction();
   transaction.update(Channel.modelName, channel._id, channel);
   transaction.insert(Message.modelName, message);
-  if (page.messages.length == 1) {
-    transaction.insert(Page.modelName, page);
-  } else {
-    transaction.update(Page.modelName, page._id, page);
-  }
-
+  transaction.insert(Page.modelName, page);
   try {
     await transaction.run();
     return true;
