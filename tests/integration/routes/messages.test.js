@@ -11,7 +11,9 @@ let server;
 describe('/api/messages', ()=> {
   let token;
   const userEmail = 'user@test.com';
+  const secondUserEmail = 'seconduser@test.com';
   let user;
+  let secondUser;
   let workspace;
   let channel;
 
@@ -50,6 +52,9 @@ describe('/api/messages', ()=> {
     await createUser(userEmail);
     user = await User.findOne({email: userEmail});
     token = user.getAuthToken();
+    await createUser(secondUserEmail);
+    secondUser = await User.findOne({email: secondUserEmail});
+    secondToken = secondUser.getAuthToken();
     await createWorkspace();
     workspace = await Workspace.findOne({name: 'WSname'});
     await createChannel();
@@ -79,10 +84,12 @@ describe('/api/messages', ()=> {
   describe('POST /workspace/:workspaceName/channel/:channelName', () => {
     let creator;
     let text;
+    let type;
 
     beforeEach(()=> {
       creator = userEmail;
       text = 'my first message';
+      type = 's';
     });
 
     afterEach(async ()=> {
@@ -92,24 +99,56 @@ describe('/api/messages', ()=> {
       await Message.remove({});
     });
 
-    const execute = () => {
+    const execute = (token) => {
       const chUrl = `channel/${channel.name}`;
       const wsUrl = `workspace/${workspace.name}`;
       return request(server)
           .post(`/api/messages/${wsUrl}/${chUrl}`)
           .set('x-auth-token', token)
-          .send({creator, text});
+          .send({creator, text, type});
     };
 
     it('should return the message if the request is valid', async () => {
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            '_id', 'text', 'creator', 'dateTime'
+            '_id', 'text', 'creator', 'dateTime', 'type'
           ])
       );
+    });
+
+    it('should return 400 if text is less than 1 characters', async ()=> {
+      text = '';
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if text is missing', async ()=> {
+      text = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if type is less than 1 characters', async ()=> {
+      type = '';
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if type is missing', async ()=> {
+      type = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 403 if the user is not in the channel', async ()=> {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
     });
   });
 });
