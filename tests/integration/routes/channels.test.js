@@ -9,8 +9,11 @@ let server;
 
 describe('/api/channels', ()=> {
   let token;
+  let secondToken;
   const userEmail = 'user@test.com';
+  const secondUserEmail = 'seconduser@test.com';
   let user;
+  let secondUser;
   let workspace;
   let workspaceName;
 
@@ -35,6 +38,9 @@ describe('/api/channels', ()=> {
     await createUser(userEmail);
     user = await User.findOne({email: userEmail});
     token = user.getAuthToken();
+    await createUser(secondUserEmail);
+    secondUser = await User.findOne({email: secondUserEmail});
+    secondToken = secondUser.getAuthToken();
     await createWorkspace();
     workspace = await Workspace.findOne({name: 'WSname'});
     firebase.subscribeToTopic = jest.fn();
@@ -81,7 +87,7 @@ describe('/api/channels', ()=> {
           {new: true});
     });
 
-    const execute = ()=> {
+    const execute = (token)=> {
       return request(server)
           .post(`/api/channels/workspace/${workspaceName}`)
           .set('x-auth-token', token)
@@ -92,7 +98,7 @@ describe('/api/channels', ()=> {
     };
 
     it('should return new channel if request is valid', async ()=> {
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
@@ -104,36 +110,36 @@ describe('/api/channels', ()=> {
 
     it('should return 400 if name is missing', async ()=> {
       name = null;
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if name is less than 1 characters', async ()=> {
       name = '';
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if name is more than 250 characters', async ()=> {
       name = new Array(252).join('a');
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(400);
     });
 
     it('should return 404 if creator is missing', async ()=> {
       creator = null;
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Invalid users.');
     });
 
-    it(`should return 404 if creator doesn't exists`, async ()=> {
+    it(`should return 404 if creator doesn't exist`, async ()=> {
       creator = 'changos@gmail.com';
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Invalid users.');
@@ -141,12 +147,21 @@ describe('/api/channels', ()=> {
 
     it('should return 404 if there are no users', async ()=> {
       users = null;
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Invalid users.');
     });
+
+    it(`should return 403 if user doesn't belong to che channel`, async ()=> {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
+      expect(response.text).toEqual('The user cannot create channels' +
+                                        ' in this workspace');
+    });
   });
+
 
   describe('GET /:channelName/workspace/:workspaceName', () => {
     let name;
@@ -183,14 +198,14 @@ describe('/api/channels', ()=> {
       await Channel.remove({});
     });
 
-    const execute = ()=> {
+    const execute = (token)=> {
       return request(server)
           .get(`/api/channels/${myChannel.name}/workspace/${workspaceName}`)
           .set('x-auth-token', token);
     };
 
     it('should return the channel is request is valid', async () => {
-      const response = await execute();
+      const response = await execute(token);
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
@@ -199,6 +214,14 @@ describe('/api/channels', ()=> {
             'isPrivate', 'creator'
           ])
       );
+    });
+
+    it(`should return 403 if user doesn't belong to the channel`, async () => {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
+      const msg = 'The user cannot see messages from this channel';
+      expect(response.text).toEqual(msg);
     });
   });
 
@@ -287,12 +310,12 @@ describe('/api/channels', ()=> {
       user3 = await User.findOne({email: userEmail3});
     });
 
-    afterEach(async ()=> {
+    afterAll(async ()=> {
       await Channel.remove({});
       await User.remove({});
     });
 
-    const execute = ()=> {
+    const execute = (token)=> {
       const chUrl = `channels/${myChannel.name}`;
       const wsUrl = `workspace/${workspaceName}`;
       return request(server)
@@ -303,7 +326,7 @@ describe('/api/channels', ()=> {
 
     it('should add the new users to the channel', async () => {
       users = [user2.email, user3.email];
-      const response = await execute();
+      const response = await execute(token);
 
       console.log(response.text);
       const updatedChannel = await Channel.findOne({name: myChannel.name})
@@ -315,6 +338,23 @@ describe('/api/channels', ()=> {
       });
       users.push(userEmail);
       expect(usersEmails).toEqual(expect.arrayContaining(users));
+    });
+
+    it(`should return 403 if user doesn't belong to the channel`, async () => {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
+      const msg = 'The user cannot add users this channel';
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if the channel doesn't exist`, async () => {
+      myChannel.name = 'otherName';
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(404);
+      const msg = 'Invalid channel.';
+      expect(response.text).toEqual(msg);
     });
   });
 });
