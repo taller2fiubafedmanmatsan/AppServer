@@ -29,7 +29,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email')
+        .populate('users', 'name nickname email photoUrl')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
