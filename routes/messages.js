@@ -20,19 +20,23 @@ router.param('workspaceName', async (request, response, next, elementId) => {
       .populate('channels', '-__v');
   if (!workspace) return response.status(404).send('Invalid workspace.');
 
+  if (request.params.channelName) {
+    const chId = workspace.channels.filter((ch) => {
+      if (ch.name === request.params.channelName) {
+        return ch._id;
+      }
+    });
+    const channel = await Channel.findById(chId)
+        .populate('pages', '-__v')
+        .populate('users', 'name nickname email')
+        .populate('creator', 'name nickname email');
+
+    if (!channel) return response.status(404).send('Invalid channel.');
+
+    request.channel = channel;
+  }
+
   request.workspace = workspace;
-  next();
-});
-
-router.param('channelName', async (request, response, next, channelName) => {
-  const channel = await Channel.findOne({name: channelName})
-      .populate('pages', '-__v')
-      .populate('users', '-password -__v')
-      .populate('creator', '-password -__v');
-
-  if (!channel) return response.status(404).send('Invalid channel.');
-
-  request.channel = channel;
   next();
 });
 

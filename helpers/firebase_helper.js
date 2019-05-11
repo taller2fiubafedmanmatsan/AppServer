@@ -1,8 +1,8 @@
 const admin = require('firebase-admin');
 
-module.exports.subscribeToTopic = async function(user) {
+module.exports.subscribeToTopic = async function(user, topic) {
   fbResponse = await admin.messaging()
-      .subscribeToTopic(user.fireBaseToken, user.topics);
+      .subscribeToTopic(user.fireBaseToken, topic);
   console.log('Successfully subscribed to topic:', fbResponse);
 };
 
