@@ -1,11 +1,13 @@
 // Integración con firebase
 // PD: Es tremendamente inseguro esto pero bueno
 const admin = require('firebase-admin');
-const serviceAccount = require('../firebase_key_sdk.json');
+const config = require('config');
 
 module.exports = function() {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://androidapp-bf64b.firebaseio.com'
-  });
+  if (process.env.NODE_ENV != 'test') {
+    admin.initializeApp({
+      credential: admin.credential.cert(config.get('firebase-key')),
+      databaseURL: config.get('firebase-database')
+    });
+  }
 };
