@@ -1,5 +1,6 @@
 // Integración con firebase
 const admin = require('firebase-admin');
+const winston = require('winston');
 const config = require('config');
 
 function setFirebaseKey() {
@@ -21,9 +22,15 @@ function setFirebaseKey() {
 
 module.exports = function() {
   if (process.env.NODE_ENV != 'test') {
-    admin.initializeApp({
-      credential: admin.credential.cert(setFirebaseKey()),
-      databaseURL: config.get('firebase_database')
-    });
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert(setFirebaseKey()),
+        databaseURL: config.get('firebase_database')
+      });
+    } catch (e) {
+      error = `Or there was an error while initializing. ${e}`;
+      winston.error(`FATAL: Firebase config is missing. ${error}`);
+      process.exit(1);
+    }
   }
 };
