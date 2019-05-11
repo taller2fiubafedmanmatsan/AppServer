@@ -11,9 +11,5 @@ module.exports = function() {
     throw new Error(errorMessage(mail_service_pwd));
   }
 
-  if (!config.get('firebase-key')) {
-    throw new Error(errorMessage(firebase_key));
-  }
-
   if (!config.get('db')) throw new Error(errorMessage(db));
 };
