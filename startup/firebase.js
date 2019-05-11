@@ -23,10 +23,10 @@ function setFirebaseKey() {
 module.exports = function() {
   if (process.env.NODE_ENV != 'test') {
     const firebaseKey = setFirebaseKey();
-    console.log(firebaseKey.private_key);
+    console.log(firebaseKey);
     try {
       admin.initializeApp({
-        credential: admin.credential.cert(setFirebaseKey()),
+        credential: admin.credential.cert(firebaseKey),
         databaseURL: config.get('firebase_database')
       });
     } catch (e) {
