@@ -2,17 +2,17 @@
   "db": "MONGODB_URI",
   "jwt_key": "jwt_private_key",
   "mail_service_pwd":"mail_service_pwd",
-  "firebase-key": {
-    "type": "fireb-type",
-    "project_id": "fireb-project-id",
-    "private_key_id": "fireb-private-key-id",
-    "private_key": "fireb-private-key",
-    "client_email": "fireb-client-email",
-    "client_id": "fireb-client-id",
-    "auth_uri": "fireb-auth-uri",
-    "token_uri": "fireb-token-uri",
-    "auth_provider_x509_cert_url": "fireb-auth-provider",
-    "client_x509_cert_url": "fireb-client-url"
+  "firebase_key": {
+    "type": "fireb_type",
+    "project_id": "fireb_project_id",
+    "private_key_id": "fireb_private_key_id",
+    "private_key": "fireb_private_key",
+    "client_email": "fireb_client_email",
+    "client_id": "fireb_client_id",
+    "auth_uri": "fireb_auth_uri",
+    "token_uri": "fireb_token_uri",
+    "auth_provider_x509_cert_url": "fireb_auth_provider",
+    "client_x509_cert_url": "fireb_client_url"
   },
-  "firebase-database": "firebase-database"
+  "firebase_database": "firebase_database"
 }

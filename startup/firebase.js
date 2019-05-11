@@ -4,12 +4,14 @@ const admin = require('firebase-admin');
 const config = require('config');
 
 module.exports = function() {
+  console.log('hello');
   if (process.env.NODE_ENV != 'test') {
-    const firebasKey = JSON.parse(config.get('firebase-key'));
-    console.log(firebasKey);
+    console.log('empiezo a buscar firebase');
+    const firebasKey = JSON.parse(config.get('firebase_key'));
+    console.log(firebaseKey);
     admin.initializeApp({
       credential: admin.credential.cert(firebasKey),
-      databaseURL: config.get('firebase-database')
+      databaseURL: config.get('firebase_database')
     });
   }
 };
