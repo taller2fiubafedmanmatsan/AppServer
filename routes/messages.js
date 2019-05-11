@@ -132,9 +132,14 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       };
 
       await firebase.sendMessageToTopic(fbMessage);
+      const resObj = {
+        message: _.pick(message, ['_id', 'text', 'dateTime',
+          'creator', 'type']),
+        name: sender.name,
+        photoUrl: sender.photoUrl
+      };
 
-      return response.status(200).send(
-          _.pick(message, ['_id', 'text', 'dateTime', 'creator', 'type']));
+      return response.status(200).send(resObj);
     });
 
 

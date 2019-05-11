@@ -23,7 +23,8 @@ describe('/api/messages', ()=> {
         .send({name: 'name',
           email: userEmail,
           password: 'password',
-          nickname: 'nick'
+          nickname: 'nick',
+          photoUrl: 'https://www.shorturl.at/img/shorturl-square.png'
         });
   };
 
@@ -114,9 +115,14 @@ describe('/api/messages', ()=> {
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            '_id', 'text', 'creator', 'dateTime', 'type'
+            'message', 'name', 'photoUrl'
           ])
       );
+      /* expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'text', 'creator', 'dateTime', 'type'
+          ])
+      );*/
     });
 
     it('should return 400 if text is less than 1 characters', async ()=> {
