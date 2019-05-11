@@ -22,6 +22,8 @@ function setFirebaseKey() {
 
 module.exports = function() {
   if (process.env.NODE_ENV != 'test') {
+    const firebaseKey = setFirebaseKey();
+    console.log(firebaseKey.private_key);
     try {
       admin.initializeApp({
         credential: admin.credential.cert(setFirebaseKey()),
