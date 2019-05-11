@@ -91,15 +91,33 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
 
       const newTopic = `${workspace.name}-${channel.name}`;
       const users = request.validChannel.users;
-      users.forEach((user) => user.topics.push(newTopic));
+
+      if (Array.isArray(users)) {
+        users.forEach(async (user) => {
+          if (!user.topics.includes(newTopic)) {
+            user.topics.push(newTopic);
+            await firebase.subscribeToTopic(user, newTopic);
+          };
+          users.forEach((user) => {
+            console.log(`user: ${user.name} in topics: ${user.topics}`);
+          });
+        });
+      } else {
+        if (!users.topics.includes(newTopic)) {
+          users.topics.push(newTopic);
+          await firebase.subscribeToTopic(users, newTopic);
+          console.log(`user: ${users.name} in topics: ${users.topics}`);
+        };
+      }
+
 
       if (!finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
 
-      users.forEach(async (user) => {
-        await firebase.subscribeToTopic(user);
-      });
+      // users.forEach(async (user) => {
+      //   await firebase.subscribeToTopic(user, newTopic);
+      // });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
@@ -169,14 +187,18 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           if (!user.topics.includes(topic)) {
             user.topics.push(topic);
             await user.save();
-            await firebase.subscribeToTopic(user);
+            await firebase.subscribeToTopic(user, topic);
           };
+          users.forEach((user) => {
+            console.log(`user: ${user.name} in topics: ${user.topics}`);
+          });
         });
       } else {
         if (!users.topics.includes(topic)) {
           users.topics.push(topic);
           await users.save();
-          await firebase.subscribeToTopic(users);
+          await firebase.subscribeToTopic(users, topic);
+          console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
 

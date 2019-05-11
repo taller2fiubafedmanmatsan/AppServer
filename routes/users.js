@@ -19,7 +19,14 @@ router.get('/me', auth, async (request, response) => {
       .populate('workspaces', 'name')
       .select('-password -__v');
 
-  response.status(200).send(user);
+  return response.status(200).send(user);
+});
+
+router.get('/:userEmail', auth, async (request, response) => {
+  const user = await User.findOne({email: request.params.userEmail})
+      .select('name email nickname photoUrl -_id');
+
+  return response.status(200).send(user);
 });
 
 router.post('/', async (request, response) => {
@@ -34,18 +41,19 @@ router.post('/', async (request, response) => {
 
   const salt = await bcrypt.genSalt(10);
   request.body.password = await bcrypt.hash(password, salt);
-  request.workspaces = [];
+  request.body.workspaces = [];
+  request.body.fireBaseToken = '';
   user = new User(_.pick(request.body,
       [
         'name', 'email', 'nickname', 'password', 'isAdmin', 'photoUrl',
-        'facebook_log', 'workspaces'
+        'facebook_log', 'workspaces', 'fireBaseToken'
       ]
   ));
   await user.save();
 
   const token = user.getAuthToken();
 
-  response.header('x-auth-token', token).status(200)
+  return response.header('x-auth-token', token).status(200)
       .send(_.pick(user, ['name', 'email']));
 });
 
@@ -65,7 +73,7 @@ router.put('/me', auth, async (request, response) => {
           ]
       ), {new: true});
 
-  response.status(200).send(_.pick(user,
+  return response.status(200).send(_.pick(user,
       [
         'name', 'email', 'nickname', 'photoUrl'
       ]
@@ -75,19 +83,21 @@ router.put('/me', auth, async (request, response) => {
 router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
   console.log(request.params);
   const user = await User.findById(request.user._id);
-  if (user.fireBaseToken && user.fireBaseToken == request.params.fbToken) {
-    response.status(200);
+  if (user.fireBaseToken === request.params.fbToken) {
+    return response.status(200).send(`Token updated.`);
   }
-
+  console.log(`Por guardar su nuevo token al user ${user.name}`);
   user.fireBaseToken = request.params.fbToken;
   await user.save();
 
-  let fbResponse;
   if (user.topics && user.topics.lenght > 0) {
-    await firebase.subscribeToTopic(user);
+    console.log(`entre a mandat cosas a un topic: ${user.topics}`);
+    user.topics.forEach(async (topic) => {
+      await firebase.subscribeToTopic(user, topic);
+    });
   };
-
-  response.status(200).send(fbResponse);
+  console.log(`Todo genial updateando el fb token de ${user.name}`);
+  return response.status(200).send(`Token updated.`);
 });
 
 router.post('/restorepassword', async (request, response) => {
@@ -106,7 +116,8 @@ router.post('/restorepassword', async (request, response) => {
 
   user.password = await bcrypt.hash(newPassword, salt);
   await user.save();
-  response.status(200).send(`New password sent to ${request.body.email}` );
+  return response.status(200)
+      .send(`New password sent to ${request.body.email}` );
 });
 
 module.exports = router;
