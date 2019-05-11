@@ -1,5 +1,16 @@
 {
-  "db": "mongodb://localhost/slack-api",
+  "db": "mongodb://localhost/slack_api",
   "jwt_key": "jwt_private_key",
-  "mail_service_pwd":"mail_service_pwd"
+  "mail_service_pwd":"mail_service_pwd",
+  "fireb_type": "fireb_type",
+  "fireb_project_id": "fireb_project_id",
+  "fireb_private_key_id": "fireb_private_key_id",
+  "fireb_private_key": "fireb_private_key",
+  "fireb_client_email": "fireb_client_email",
+  "fireb_client_id": "fireb_client_id",
+  "fireb_auth_uri": "fireb_auth_uri",
+  "fireb_token_uri": "fireb_token_uri",
+  "fireb_auth_provider": "fireb_auth_provider",
+  "fireb_client_url": "fireb_client_url",
+  "firebase_database": "firebase_database"
 }

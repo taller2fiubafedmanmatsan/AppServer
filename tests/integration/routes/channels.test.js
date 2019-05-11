@@ -38,6 +38,7 @@ describe('/api/channels', ()=> {
     await createWorkspace();
     workspace = await Workspace.findOne({name: 'WSname'});
     firebase.subscribeToTopic = jest.fn();
+    firebase.sendMessageToTopic = jest.fn();
   });
 
   afterAll(async ()=> {

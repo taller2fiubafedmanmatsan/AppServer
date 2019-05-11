@@ -58,6 +58,7 @@ describe('/api/messages', ()=> {
 
   beforeAll(() => {
     firebase.subscribeToTopic = jest.fn();
+    firebase.sendMessageToTopic = jest.fn();
   });
 
   afterAll(async ()=> {
