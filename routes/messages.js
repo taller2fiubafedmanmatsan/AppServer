@@ -124,6 +124,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
           workspace: workspace.name,
           channel: channel.name,
           sender_id: sender._id.toString(),
+          sender_photoUrl: sender.photoUrl,
           sender_name: sender.name,
           sender_email: sender.email,
           sender_nickname: sender.nickname || ''
