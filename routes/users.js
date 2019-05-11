@@ -5,6 +5,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const mailer = require('../mailer/password_restoration_mail');
 const randomstring = require('randomstring');
+const firebase = require('../helpers/firebase_helper');
 
 const {
   User,
@@ -69,6 +70,24 @@ router.put('/me', auth, async (request, response) => {
         'name', 'email', 'nickname', 'photoUrl'
       ]
   ));
+});
+
+router.patch('/fbtoken/:fbToken', auth, async (request, response) => {
+  console.log(request.params);
+  const user = await User.findById(request.user._id);
+  if (user.fireBaseToken && user.fireBaseToken == request.params.fbToken) {
+    response.status(200);
+  }
+
+  user.fireBaseToken = request.params.fbToken;
+  await user.save();
+
+  let fbResponse;
+  if (user.topics && user.topics.lenght > 0) {
+    await firebase.subscribeToTopic(user);
+  };
+
+  response.status(200).send(fbResponse);
 });
 
 router.post('/restorepassword', async (request, response) => {

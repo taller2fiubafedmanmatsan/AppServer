@@ -20,7 +20,9 @@ const userSchema = mongoose.Schema({
   workspaces: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Workspace'
-  }]
+  }],
+  fireBaseToken: String,
+  topics: [String]
 });
 
 userSchema.methods.getAuthToken = function() {

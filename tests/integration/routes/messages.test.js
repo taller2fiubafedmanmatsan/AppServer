@@ -4,6 +4,7 @@ const {Workspace} = require('../../../models/workspace');
 const {Channel} = require('../../../models/channel');
 const {Page} = require('../../../models/page');
 const {Message} = require('../../../models/message');
+const firebase = require('../../../helpers/firebase_helper');
 
 let server;
 
@@ -17,7 +18,11 @@ describe('/api/messages', ()=> {
   const createUser = (userEmail)=> {
     return request(server)
         .post('/api/users')
-        .send({name: 'name', email: userEmail, password: 'password'});
+        .send({name: 'name',
+          email: userEmail,
+          password: 'password',
+          nickname: 'nick'
+        });
   };
 
   const createWorkspace = ()=> {
@@ -49,6 +54,11 @@ describe('/api/messages', ()=> {
     workspace = await Workspace.findOne({name: 'WSname'});
     await createChannel();
     channel = await Channel.findOne({name: 'channelName'});
+  });
+
+  beforeAll(() => {
+    firebase.subscribeToTopic = jest.fn();
+    firebase.sendMessageToTopic = jest.fn();
   });
 
   afterAll(async ()=> {

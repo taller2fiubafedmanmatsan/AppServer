@@ -3,14 +3,17 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const _ = require('lodash');
+const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Channel} = require('../models/channel');
 const {Page, isFull} = require('../models/page');
+const {User} = require('../models/user');
 const {
   Message,
   validateMessage,
   validateMessageUpdate
 } = require('../models/message');
+
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
@@ -39,6 +42,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       const {error} = validateMessage(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
+      const workspace = request.workspace;
       const channel = request.channel;
       if (!request.channel.users.some((user) => user._id == request.user._id)) {
         return response.status(403)
@@ -64,6 +68,27 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       if (!finishedCreationTransaction(channel, page, message)) {
         return response.status(500).send('Transaction could not be completed');
       }
+
+      const sender = await User.findById(request.user._id);
+      const topic = `${request.workspace.name}-${channel.name}`;
+
+      const fbMessage = {
+        data: {
+          msgId: message._id.toString(),
+          msg: message.text,
+          createdAt: message.dateTime.toISOString(),
+          workspace: workspace.name,
+          channel: channel.name,
+          sender_id: sender._id.toString(),
+          sender_name: sender.name,
+          sender_email: sender.email,
+          sender_nickname: sender.nickname || ''
+        },
+        topic: topic
+      };
+
+      await firebase.sendMessageToTopic(fbMessage);
+
       return response.status(200).send(
           _.pick(message, ['_id', 'text', 'dateTime', 'creator']));
     });

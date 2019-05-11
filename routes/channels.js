@@ -3,8 +3,10 @@ const Transaction = require('mongoose-transactions');
 const _ = require('lodash');
 const auth = require('../middleware/auth');
 const channelTransform = require('../middleware/channel_transform');
+const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
+const {User} = require('../models/user');
 
 const router = express.Router();
 
@@ -87,9 +89,17 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
       workspace.channels.push(channel._id);
 
-      if (!finishedCreationTransaction(workspace, channel, page)) {
+      const newTopic = `${workspace.name}-${channel.name}`;
+      const users = request.validChannel.users;
+      users.forEach((user) => user.topics.push(newTopic));
+
+      if (!finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
+
+      users.forEach(async (user) => {
+        await firebase.subscribeToTopic(user);
+      });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
@@ -134,16 +144,17 @@ router.patch('/', auth, async (request, response) => {
   return response.status(200).send(_.pick(channel, fields));
 });
 
-router.patch('/:channelName/workspace/:workspaceName/addUsers',
-    [auth, channelTransform],
+router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
     async (request, response) => {
       const fields = ['users'];
 
-      const users = request.validChannel.users;
+      const users = await User.find({email: {$in: request.body.users}});
+      if (!users) return response.status(400).send('No users where provided.');
 
       let channel = request.channel;
 
-      if (!channel.users.some((user) => user._id == request.user._id)) {
+      if (channel.isPrivate &&
+        !channel.users.some((user) => user._id == request.user._id)) {
         return response.status(403).send('The user cannot add users' +
                                           ' this channel');
       }
@@ -152,18 +163,34 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers',
           {$addToSet: {users: users.map((user) => user._id)}},
           {new: true});
 
-      // users.forEach((user) => {
-      //   user.topics.push();
-      // });
+      const topic = `${request.workspace.name}-${channel.name}`;
+      if (Array.isArray(users)) {
+        users.forEach(async (user) => {
+          if (!user.topics.includes(topic)) {
+            user.topics.push(topic);
+            await user.save();
+            await firebase.subscribeToTopic(user);
+          };
+        });
+      } else {
+        if (!users.topics.includes(topic)) {
+          users.topics.push(topic);
+          await users.save();
+          await firebase.subscribeToTopic(users);
+        };
+      }
 
       return response.status(200).send(_.pick(channel, fields));
     });
 
-async function finishedCreationTransaction(workspace, channel, page) {
+async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
+  users.forEach((user) => {
+    return transaction.update(User.modelName, user._id, user);
+  });
 
   try {
     await transaction.run();
