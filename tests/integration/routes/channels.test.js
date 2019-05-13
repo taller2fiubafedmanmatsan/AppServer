@@ -475,5 +475,54 @@ describe('/api/channels', ()=> {
       expect(updatedChannel.welcomeMessage).not.toEqual(welcomeMessage);
       expect(response.status).toBe(403);
     });
+
+    it('return 400 if the name is shorter than 1 character', async () => {
+      name = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the name is longer than 50 characters', async () => {
+      name = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the welcomeMessage is 1-character long', async () => {
+      welcomeMessage = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the welcomeMessage is longer than 250', async () => {
+      welcomeMessage = new Array(252).join('a');
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the description is 1-character long', async () => {
+      description = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the description is longer than 250', async () => {
+      description = new Array(252).join('a');
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the new name already exists', async () => {
+      name = 'channelName';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
   });
 });
