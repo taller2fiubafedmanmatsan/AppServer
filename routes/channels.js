@@ -124,43 +124,33 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
           ]));
     });
 
-router.patch('/', auth, async (request, response) => {
-  const fields = [
-    'name', 'isPrivate',
-    'description', 'welcomeMessage'
-  ];
+router.patch('/:channelName/workspace/:workspaceName', auth,
+    async (request, response) => {
+      const fields = ['name', 'isPrivate', 'description', 'welcomeMessage'];
 
-  const {error} = validateChannelUpdate(_.pick(request.body, fields));
-  if (error) return response.status(400).send(error.details[0].message);
+      const {error} = validateChannelUpdate(_.pick(request.body, fields));
+      if (error) return response.status(400).send(error.details[0].message);
 
-  const {workspaceId, channelId, name} = request.body;
+      const workspace = request.workspace;
+      let channel = request.channel;
 
-  const workspace = await Workspace.
-      findById(workspaceId).
-      populate('channels', 'name');
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id) &&
+               (workspace.creator != request.user._id)) {
+        const msg = `You cannot modify ${channel.name} channel`;
+        return response.status(403).send(msg);
+      }
 
-  if (!workspace) return response.status(404).send('Invalid workspace.');
+      const {name} = request.body;
+      if (name && workspace.channels.
+          some((aChannel) => aChannel.name == name)) {
+        return response.status(400).send('Channel already registered.');
+      }
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
-    return response.status(403).send('The user cannot modify channels' +
-                                          ' in this workspace');
-  }
-
-  if (name && workspace.channels.
-      some((aChannel) => aChannel.name == name)) {
-    return response.status(400).send('Channel already registered.');
-  }
-
-  let channel = workspace.channels.find((aChannel) => {
-    return aChannel._id == channelId;
-  });
-
-  if (!channel) return response.status(404).send('Invalid channel.');
-
-  channel = await Channel.findByIdAndUpdate(channel._id,
-      _.pick(request.body, fields), {new: true});
-  return response.status(200).send(_.pick(channel, fields));
-});
+      channel = await Channel.findByIdAndUpdate(channel._id,
+          _.pick(request.body, fields), {new: true});
+      return response.status(200).send(_.pick(channel, fields));
+    });
 
 router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
     async (request, response) => {

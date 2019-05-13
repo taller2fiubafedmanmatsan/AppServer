@@ -9,11 +9,17 @@ let server;
 
 describe('/api/channels', ()=> {
   let token;
-  let secondToken;
+  let nonMemberToken;
   const userEmail = 'user@test.com';
-  const secondUserEmail = 'seconduser@test.com';
+  const nonMemberUserEmail = 'nonMemberUser@test.com';
+  const adminUserEmail = 'admin@test.com';
+  const memberUserEmail = 'member@test.com';
   let user;
-  let secondUser;
+  let nonMemberUser;
+  let adminToken;
+  let memberToken;
+  let admin;
+  let member;
   let workspace;
   let workspaceName;
 
@@ -23,13 +29,13 @@ describe('/api/channels', ()=> {
         .send({name: 'name', email: userEmail, password: 'password'});
   };
 
-  const createWorkspace = ()=> {
+  const createWorkspace = (name, creator, admins, users)=> {
     return request(server)
         .post('/api/workspaces')
         .set('x-auth-token', token)
         .send({
-          name: 'WSname', creator: userEmail, admins: [userEmail],
-          users: [userEmail], description: 'a', welcomeMessage: 'a'
+          name: name, creator: creator, admins: admins,
+          users: users, description: 'a', welcomeMessage: 'a'
         });
   };
 
@@ -38,10 +44,22 @@ describe('/api/channels', ()=> {
     await createUser(userEmail);
     user = await User.findOne({email: userEmail});
     token = user.getAuthToken();
-    await createUser(secondUserEmail);
-    secondUser = await User.findOne({email: secondUserEmail});
-    secondToken = secondUser.getAuthToken();
-    await createWorkspace();
+
+    await createUser(nonMemberUserEmail);
+    nonMemberUser = await User.findOne({email: nonMemberUserEmail});
+    nonMemberToken = nonMemberUser.getAuthToken();
+
+    await createUser(adminUserEmail);
+    admin = await User.findOne({email: adminUserEmail});
+    adminToken = admin.getAuthToken();
+
+    await createUser(memberUserEmail);
+    member = await User.findOne({email: memberUserEmail});
+    memberToken = member.getAuthToken();
+
+    await createWorkspace('WSname', userEmail,
+        [userEmail, adminUserEmail],
+        [userEmail, adminUserEmail, memberUserEmail]);
     workspace = await Workspace.findOne({name: 'WSname'});
     firebase.subscribeToTopic = jest.fn();
     firebase.sendMessageToTopic = jest.fn();
@@ -153,8 +171,8 @@ describe('/api/channels', ()=> {
       expect(response.text).toEqual('Invalid users.');
     });
 
-    it(`should return 403 if user doesn't belong to che channel`, async ()=> {
-      const response = await execute(secondToken);
+    it(`should return 403 if user doesn't belong to the channel`, async ()=> {
+      const response = await execute(nonMemberToken);
 
       expect(response.status).toBe(403);
       expect(response.text).toEqual('The user cannot create channels' +
@@ -217,7 +235,7 @@ describe('/api/channels', ()=> {
     });
 
     it(`should return 403 if user doesn't belong to the channel`, async () => {
-      const response = await execute(secondToken);
+      const response = await execute(nonMemberToken);
 
       expect(response.status).toBe(403);
       const msg = 'The user cannot see messages from this channel';
@@ -312,7 +330,7 @@ describe('/api/channels', ()=> {
 
     afterAll(async ()=> {
       await Channel.remove({});
-      await User.remove({});
+      // await User.remove({});
     });
 
     const execute = (token)=> {
@@ -341,7 +359,7 @@ describe('/api/channels', ()=> {
     });
 
     it(`should return 403 if user doesn't belong to the channel`, async () => {
-      const response = await execute(secondToken);
+      const response = await execute(nonMemberToken);
 
       expect(response.status).toBe(403);
       const msg = 'The user cannot add users this channel';
@@ -350,11 +368,112 @@ describe('/api/channels', ()=> {
 
     it(`should return 404 if the channel doesn't exist`, async () => {
       myChannel.name = 'otherName';
-      const response = await execute(secondToken);
+      const response = await execute(nonMemberToken);
 
       expect(response.status).toBe(404);
       const msg = 'Invalid channel.';
       expect(response.text).toEqual(msg);
+    });
+  });
+
+  describe('PATCH /:channelName/workspace/:workspaceName', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail, adminUserEmail, memberUserEmail];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
+    });
+
+    afterEach(async ()=> {
+      await Channel.remove({});
+    });
+
+    const execute = (token)=> {
+      const chUrl = `channels/${myChannel.name}`;
+      const wsUrl = `workspace/${workspaceName}`;
+      return request(server)
+          .patch(`/api/${chUrl}/${wsUrl}`)
+          .set('x-auth-token', token)
+          .send({name, description, isPrivate, welcomeMessage});
+    };
+
+    it('should let the creator change channel fields', async () => {
+      welcomeMessage = 'Creator welcome message';
+      description = 'Creator description';
+      isPrivate = false;
+      name = 'Creator name';
+      const response = await execute(token);
+
+      const updatedChannel = await Channel.findOne({name: name});
+      expect(updatedChannel.name).toEqual(name);
+      expect(updatedChannel.description).toEqual(description);
+      expect(updatedChannel.isPrivate).toBe(false);
+      expect(updatedChannel.welcomeMessage).toEqual(welcomeMessage);
+      expect(response.status).toBe(200);
+    });
+
+    it('should let the admin change channel fields', async () => {
+      welcomeMessage = 'Creator welcome message';
+      description = 'Creator description';
+      isPrivate = false;
+      name = 'Creator name';
+      const response = await execute(adminToken);
+
+      const updatedChannel = await Channel.findOne({name: name});
+      expect(updatedChannel.name).toEqual(name);
+      expect(updatedChannel.description).toEqual(description);
+      expect(updatedChannel.isPrivate).toBe(false);
+      expect(updatedChannel.welcomeMessage).toEqual(welcomeMessage);
+      expect(response.status).toBe(200);
+    });
+
+    it('should not let non-owner member change channel fields', async () => {
+      welcomeMessage = 'Creator welcome message';
+      description = 'Creator description';
+      isPrivate = true;
+      const response = await execute(memberToken);
+
+      const updatedChannel = await Channel.findOne({name: 'channelName'});
+      expect(updatedChannel.description).not.toEqual(description);
+      expect(updatedChannel.isPrivate).toBe(true);
+      expect(updatedChannel.welcomeMessage).not.toEqual(welcomeMessage);
+      expect(response.status).toBe(403);
+    });
+
+    it('should not let non-workspace-member change fields', async () => {
+      welcomeMessage = 'non-member welcome message';
+      description = 'non-member description';
+      isPrivate = true;
+
+      const response = await execute(nonMemberToken);
+
+      const updatedChannel = await Channel.findOne({name: 'channelName'});
+      expect(updatedChannel.description).not.toEqual(description);
+      expect(updatedChannel.isPrivate).toBe(true);
+      expect(updatedChannel.welcomeMessage).not.toEqual(welcomeMessage);
+      expect(response.status).toBe(403);
     });
   });
 });
