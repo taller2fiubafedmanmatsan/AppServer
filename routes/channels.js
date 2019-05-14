@@ -70,9 +70,11 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (error) return response.status(400).send(error.details[0].message);
 
       const workspace = request.workspace;
-      if (!workspace.admins.some((userId) => userId == request.user._id)) {
-        return response.status(403).send('The user cannot create channels' +
-                                          ' in this workspace');
+      if (!workspace.admins.some((userId) => userId == request.user._id)&&
+          !workspace.users.some((userId) => userId == request.user._id)&&
+          (workspace.creator != request.user._id)) {
+        const msg = 'The user cannot create channels in this workspace';
+        return response.status(403).send(msg);
       }
 
       const page = new Page({

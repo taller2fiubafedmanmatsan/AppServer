@@ -126,6 +126,17 @@ describe('/api/channels', ()=> {
       );
     });
 
+    it('should return 200 if user member creates a channel', async ()=> {
+      const response = await execute(memberToken);
+
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+          ])
+      );
+    });
+
     it('should return 400 if name is missing', async ()=> {
       name = null;
       const response = await execute(token);
