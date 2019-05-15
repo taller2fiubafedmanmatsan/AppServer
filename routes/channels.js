@@ -6,6 +6,7 @@ const channelTransform = require('../middleware/channel_transform');
 const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
+const {Message} = require('../models/message');
 const {User} = require('../models/user');
 
 const router = express.Router();
@@ -29,7 +30,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl')
+        .populate('users', 'name nickname email photoUrl topics')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
@@ -197,6 +198,30 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       return response.status(200).send(_.pick(channel, fields));
     });
 
+router.delete('/:channelName/workspace/:workspaceName', [auth],
+    async (request, response) => {
+      const workspace = request.workspace;
+      const channel = request.channel;
+
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id) &&
+               (workspace.creator != request.user._id)) {
+        const msg = `You cannot delete ${channel.name} channel`;
+        return response.status(403).send(msg);
+      }
+
+      // Remove channel from workspace
+      workspace.channels = workspace.channels.filter((aChannel) => {
+        return aChannel._id != channel._id;
+      });
+
+      if (!await finishedDeletionTransaction(workspace, channel)) {
+        return response.status(500).send(error);
+      }
+      return response.status(200).send(`Deleted ${channel.name} successfully`);
+    });
+
+
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
   transaction.insert(Channel.modelName, channel);
@@ -205,6 +230,27 @@ async function finishedCreationTransaction(workspace, channel, page, users) {
   users.forEach((user) => {
     return transaction.update(User.modelName, user._id, user);
   });
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedDeletionTransaction(workspace, channel) {
+  transaction = new Transaction();
+  channel.pages.forEach((aPage) => {
+    aPage.messages.forEach((aMessage) => {
+      transaction.remove(Message.modelName, aMessage);
+    });
+    transaction.remove(Page.modelName, aPage);
+  });
+  transaction.remove(Channel.modelName, channel);
 
   try {
     await transaction.run();

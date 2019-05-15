@@ -536,4 +536,78 @@ describe('/api/channels', ()=> {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('DELETE /:channelName/workspace/:workspaceName', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail, adminUserEmail, memberUserEmail];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
+    });
+
+    afterEach(async ()=> {
+      await Channel.remove({});
+    });
+
+    const execute = (token)=> {
+      const chUrl = `channels/${myChannel.name}`;
+      const wsUrl = `workspace/${workspaceName}`;
+      return request(server)
+          .delete(`/api/${chUrl}/${wsUrl}`)
+          .set('x-auth-token', token)
+          .send({name, description, isPrivate, welcomeMessage});
+    };
+
+    it('should let the creator delete the channel', async () => {
+      const response = await execute(token);
+
+      expect(await Channel.findOne({name: name})).toBe(null);
+      expect(response.status).toBe(200);
+    });
+
+    it('should let the admin change delete the channel', async () => {
+      const response = await execute(adminToken);
+
+      expect(await Channel.findOne({name: name})).toBe(null);
+      expect(response.status).toBe(200);
+    });
+
+    it('should not let non-owner delete the channel', async () => {
+      const response = await execute(memberToken);
+
+      const updatedChannel = await Channel.findOne({name: name});
+      expect(updatedChannel.name).toBe(name);
+      expect(response.status).toBe(403);
+    });
+
+    it('should not let non-workspace-member delete the channel', async () => {
+      const response = await execute(nonMemberToken);
+
+      const updatedChannel = await Channel.findOne({name: name});
+      expect(updatedChannel.name).toBe(name);
+      expect(response.status).toBe(403);
+    });
+  });
 });
