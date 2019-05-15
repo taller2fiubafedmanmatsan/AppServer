@@ -59,6 +59,8 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       };
       const message = new Message(_.pick(messageData, fields));
 
+      // Veo en que pagina va el mensaje, sino hay lugar en la ultima,
+      //  creo otra.
       let page = channel.pages[channel.pages.length - 1];
       if (!page || isFull(page)) {
         page = new Page({number: channel.pages.length, messages: [message]});
