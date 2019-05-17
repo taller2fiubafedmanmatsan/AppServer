@@ -124,7 +124,51 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
       return user.email == adminEmail;
     });
 
-    if (!workspace.admins.includes(newAdmin)) workspace.admins.push(newAdmin);
+    if (!workspace.admins.some((admin) => {
+      return admin.email == newAdmin.email;
+    })) {
+      workspace.admins.push(newAdmin);
+    }
+  });
+
+  workspace = await Workspace.findByIdAndUpdate(workspace._id,
+      workspace, {new: true});
+  response.status(200).send(_.pick(workspace, ['name', 'admins']));
+});
+
+router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
+  let workspace = await Workspace.findOne({name: request.params.wsname})
+      .populate('users', 'email')
+      .populate('admins', 'email');
+
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  if (request.user._id != workspace.creator) {
+    const msg = `You have no permissions to modify ${workspace.name} workspace`;
+    return response.status(403).send(msg);
+  }
+
+  const adminsEmails = request.body.admins;
+  if (!adminsEmails) {
+    return response.status(400).send('No admins to remove were specified.');
+  }
+
+  /* const usersEmails = workspace.users.map((user) => {
+    return user.email;
+  });
+
+  if (!adminsEmails.every((adminEmail) => {
+    return usersEmails.includes(adminEmail);
+  })) {
+    const msg = `Not all the specified admins belong to ${workspace.name}`;
+    return response.status(400).send(msg);
+  }*/
+
+
+  adminsEmails.forEach((adminEmail) => {
+    workspace.admins = workspace.admins.filter((admin) => {
+      return admin.email != adminEmail;
+    });
   });
 
   workspace = await Workspace.findByIdAndUpdate(workspace._id,
