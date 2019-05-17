@@ -7,10 +7,13 @@ let server;
 describe('/api/workspaces', ()=> {
   let token;
   let secondToken;
+  let thirdToken;
   const userEmail = 'user@test.com';
   const secondUserEmail = 'seconduser@test.com';
+  const thirdUserEmail = 'thirduser@test.com';
   let user;
   let secondUser;
+  let thirdUser;
 
   const createUser = (userEmail)=> {
     return request(server)
@@ -26,6 +29,9 @@ describe('/api/workspaces', ()=> {
     await createUser(secondUserEmail);
     secondUser = await User.findOne({email: secondUserEmail});
     secondToken = secondUser.getAuthToken();
+    await createUser(thirdUserEmail);
+    thirdUser = await User.findOne({email: thirdUserEmail});
+    thirdToken = thirdUser.getAuthToken();
   });
 
   afterAll(async ()=> {
@@ -390,6 +396,84 @@ describe('/api/workspaces', ()=> {
       const workspace = await Workspace.findOne({name: name});
       expect(workspace.name).toBe(name);
       expect(response.status).toBe(403);
+    });
+  });
+
+  describe('PATCH /:wsname/addAdmins', ()=> {
+    let name;
+    let myWorkspace;
+    let admins;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail, admins: admins,
+            users: [userEmail, secondUserEmail], description: 'a',
+            welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      admins = [userEmail];
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterEach(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .patch(`/api/workspaces/${myWorkspace.name}/addAdmins`)
+          .set('x-auth-token', token)
+          .send({admins: admins});
+    };
+
+    it('should add the second user to admin list', async () => {
+      admins = [secondUserEmail];
+      const response = await execute(token);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('admins', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'admins']));
+
+      const adminsEmails = updatedWorkspace.admins.map((admin) => {
+        return admin.email;
+      });
+      admins.push(userEmail);
+      expect(adminsEmails).toEqual(expect.arrayContaining(admins));
+    });
+
+    it(`should return 403 if user doesn't belong to workspace`, async () => {
+      const response = await execute(thirdToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to modify ${myWorkspace.name} workspace`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if workspace doesn't exist`, async () => {
+      myWorkspace.name = 'a';
+      const response = await execute(token);
+
+      expect(response.status).toBe(404);
+      const msg = 'Workspace not found.';
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 400 if no admins were specified`, async () => {
+      admins = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+      const msg = 'No new admins were specified.';
+      expect(response.text).toEqual(msg);
     });
   });
 });
