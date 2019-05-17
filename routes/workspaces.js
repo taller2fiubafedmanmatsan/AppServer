@@ -2,7 +2,11 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const Transaction = require('mongoose-transactions');
 const usersExist = require('../middleware/existing_users');
-const {Workspace, validate} = require('../models/workspace');
+const {
+  Workspace,
+  validate,
+  validateWorkspaceUpdate
+} = require('../models/workspace');
 const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
@@ -81,6 +85,32 @@ router.patch('/:wsname', auth, async (request, response) => {
     return response.status(500).send(error);
   }
   response.status(200).send(_.pick(workspace, ['name']));
+});
+
+router.patch('/:wsname/fields', auth, async (request, response) => {
+  const fields = ['name', 'imageUrl', 'location', 'description',
+    'welcomeMessage'];
+
+  const {error} = validateWorkspaceUpdate(_.pick(request.body, fields));
+  if (error) return response.status(400).send(error.details[0].message);
+
+  let workspace = await Workspace.findOne({name: request.params.wsname});
+
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  if (request.user._id != workspace.creator) {
+    const msg = `You cannot modify ${workspace.name} workspace`;
+    return response.status(403).send(msg);
+  }
+
+  const {name} = request.body;
+  if (name && (await Workspace.findOne({name: name}) )) {
+    return response.status(400).send('Workspace name already taken.');
+  }
+
+  workspace = await Workspace.findByIdAndUpdate(workspace._id,
+      _.pick(request.body, fields), {new: true});
+  return response.status(200).send(_.pick(workspace, fields));
 });
 
 async function finishedJoinTransaction(user, workspace) {

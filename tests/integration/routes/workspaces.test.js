@@ -190,7 +190,6 @@ describe('/api/workspaces', ()=> {
 
     afterAll(async ()=> {
       await Workspace.remove({});
-      await User.remove({});
     });
 
     const execute = (token)=> {
@@ -219,6 +218,131 @@ describe('/api/workspaces', ()=> {
       const response = await execute(token);
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Workspace not found.');
+    });
+  });
+
+  describe('PATCH /:wsname/fields', ()=> {
+    let name;
+    let myWorkspace;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail, admins: [userEmail],
+            users: [userEmail], description: 'a', welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterEach(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .patch(`/api/workspaces/${myWorkspace.name}/fields`)
+          .set('x-auth-token', token)
+          .send({name, description, imageUrl, location, welcomeMessage});
+    };
+
+    it('should let the creator change channel fields', async () => {
+      name = 'new name';
+      description = 'new description';
+      imageUrl = 'https://www.allacronyms.com/127021hipster.png';
+      location = 'new location';
+      description = 'new description';
+      welcomeMessage = 'new messsage';
+
+      const response = await execute(token);
+
+      const updatedWorkspace = await Workspace.
+          findOne({name: name});
+      expect(response.status).toBe(200);
+      expect(updatedWorkspace.name).toEqual(name);
+      expect(updatedWorkspace.description).toEqual(description);
+      expect(updatedWorkspace.location).toEqual(location);
+      expect(updatedWorkspace.welcomeMessage).toEqual(welcomeMessage);
+    });
+
+    it('should not let non-owner member change workspace fields', async () => {
+      name = 'new name';
+      description = 'new description';
+      imageUrl = 'https://www.allacronyms.com/127021hipster.png';
+      location = 'new location';
+      description = 'new description';
+      welcomeMessage = 'new messsage';
+      const response = await execute(secondToken);
+
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name});
+      expect(updatedWorkspace.name).not.toEqual(name);
+      expect(updatedWorkspace.description).not.toEqual(description);
+      expect(updatedWorkspace.location).not.toEqual(location);
+      expect(updatedWorkspace.welcomeMessage).not.toEqual(welcomeMessage);
+      expect(response.status).toBe(403);
+    });
+
+    it('return 400 if the name is shorter than 1 character', async () => {
+      name = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the name is longer than 250 characters', async () => {
+      name = new Array(252).join('a');
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the new name already exists', async () => {
+      name = 'workspaceName';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the welcomeMessage is shorter than 1 char', async () => {
+      welcomeMessage = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the welcomeMessage is longer than 250', async () => {
+      welcomeMessage = new Array(252).join('a');
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the description is shorter than 1 char', async () => {
+      description = '';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if the description is longer than 250 char', async () => {
+      description = new Array(252).join('a');
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+    });
+
+    it('return 400 if imageUrl is not a valid image', async () => {
+      imageUrl = 'a';
+
+      const response = await execute(token);
+      expect(response.status).toBe(400);
     });
   });
 });
