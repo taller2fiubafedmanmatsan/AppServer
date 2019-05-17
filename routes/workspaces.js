@@ -7,6 +7,10 @@ const {
   validate,
   validateWorkspaceUpdate
 } = require('../models/workspace');
+const {Channel} = require('../models/channel');
+const {Page} = require('../models/page');
+const {Message} = require('../models/message');
+
 const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
@@ -113,10 +117,66 @@ router.patch('/:wsname/fields', auth, async (request, response) => {
   return response.status(200).send(_.pick(workspace, fields));
 });
 
+router.delete('/:wsname', [auth],
+    async (request, response) => {
+      const workspace = await Workspace.findOne({name: request.params.wsname})
+          .populate({path: 'channels', populate: {path: 'pages'}})
+          .populate('users', '-__v');
+
+      if (!workspace) return response.status(404).send('Invalid workspace.');
+
+      if (request.user._id != workspace.creator) {
+        const msg = `You cannot delete ${workspace.name} workspace`;
+        return response.status(403).send(msg);
+      }
+
+      const users = workspace.users;
+      const channels = workspace.channels;
+
+      if (!await finishedDeletionTransaction(workspace, channels, users)) {
+        return response.status(500).send(error);
+      }
+      const resMsg = `Deleted ${workspace.name} successfully`;
+      return response.status(200).send(resMsg);
+    });
+
 async function finishedJoinTransaction(user, workspace) {
   transaction = new Transaction();
   transaction.update(Workspace.modelName, workspace._id, workspace);
   transaction.update(User.modelName, user._id, user);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedDeletionTransaction(workspace, channels, users) {
+  transaction = new Transaction();
+
+  users.forEach((user) => {
+    user.workspaces = user.workspaces.filter((aWorkspace) => {
+      return aWorkspace._id != workspace._id;
+    });
+    transaction.update(User.modelName, user._id, user);
+  });
+
+  channels.forEach((channel) => {
+    channel.pages.forEach((aPage) => {
+      aPage.messages.forEach((aMessage) => {
+        transaction.remove(Message.modelName, aMessage._id);
+      });
+      transaction.remove(Page.modelName, aPage._id);
+    });
+    transaction.remove(Channel.modelName, channel._id);
+  });
+
+  transaction.remove(Workspace.modelName, workspace);
 
   try {
     await transaction.run();

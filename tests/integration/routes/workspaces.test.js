@@ -345,4 +345,51 @@ describe('/api/workspaces', ()=> {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('DELETE /:wsname', ()=> {
+    let name;
+    let myWorkspace;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail, admins: [userEmail],
+            users: [userEmail], description: 'a', welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterEach(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .delete(`/api/workspaces/${myWorkspace.name}`)
+          .set('x-auth-token', token)
+          .send({name, description, imageUrl, location, welcomeMessage});
+    };
+
+    it('should let the creator delete the workspace', async () => {
+      const response = await execute(token);
+
+      expect(await Workspace.findOne({name: name})).toBe(null);
+      expect(response.status).toBe(200);
+    });
+
+    it('should not let non-owner delete the workspace', async () => {
+      const response = await execute(secondToken);
+
+      const workspace = await Workspace.findOne({name: name});
+      expect(workspace.name).toBe(name);
+      expect(response.status).toBe(403);
+    });
+  });
 });
