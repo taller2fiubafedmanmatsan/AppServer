@@ -153,18 +153,6 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
     return response.status(400).send('No admins to remove were specified.');
   }
 
-  /* const usersEmails = workspace.users.map((user) => {
-    return user.email;
-  });
-
-  if (!adminsEmails.every((adminEmail) => {
-    return usersEmails.includes(adminEmail);
-  })) {
-    const msg = `Not all the specified admins belong to ${workspace.name}`;
-    return response.status(400).send(msg);
-  }*/
-
-
   adminsEmails.forEach((adminEmail) => {
     workspace.admins = workspace.admins.filter((admin) => {
       return admin.email != adminEmail;
