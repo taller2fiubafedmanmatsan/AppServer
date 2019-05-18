@@ -164,6 +164,89 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
   response.status(200).send(_.pick(workspace, ['name', 'admins']));
 });
 
+router.patch('/:wsname/addUsers', auth,
+    async (request, response) => {
+      const workspace = await Workspace.findOne({name: request.params.wsname})
+          .populate('users');
+      if (!workspace) return response.status(404).send('Workspace not found.');
+
+      if (!workspace.admins.some((userId) => userId == request.user._id)) {
+        const msg = `You have no permissions to modify ${workspace.name}`;
+        return response.status(403).send(msg);
+      }
+
+      if (!request.body.users) {
+        return response.status(400).send('No new users were specified.');
+      }
+
+      const newUsers = await User.find({email: {$in: request.body.users}});
+
+      newUsers.forEach((user) => {
+        if (!workspace.users.some((wsUser) => {
+          return user.email === wsUser.email;
+        })) {
+          workspace.users.push(user);
+          user.workspaces.push(workspace);
+        };
+      });
+
+      if (!await finishedUsersUpdateTransaction(workspace, newUsers)) {
+        return response.status(500).send(error);
+      }
+
+      response.status(200).send(_.pick(workspace, ['name', 'users']));
+    });
+
+router.patch('/:wsname/removeUsers', auth, async (request, response) => {
+  const workspace = await Workspace.findOne({name: request.params.wsname})
+      .populate('users', 'email workspaces');
+
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+    const msg = `You have no permissions to modify ${workspace.name}`;
+    return response.status(403).send(msg);
+  }
+
+  if (!request.body.users) {
+    return response.status(400).send('No users to remove were specified.');
+  }
+
+  const usersToRemove = await User.find({email: {$in: request.body.users}});
+
+  usersToRemove.forEach((user) =>{
+    user.workspaces = user.workspaces.filter((aWorkspace) => {
+      return aWorkspace.name == workspace.name;
+    });
+    workspace.users = workspace.users.filter((wsUser) => {
+      return wsUser.email != user.email;
+    });
+  });
+  console.log(usersToRemove);
+
+  if (!await finishedUsersUpdateTransaction(workspace, usersToRemove)) {
+    return response.status(500).send(error);
+  }
+
+  /* const removed = []; // Los que se van
+  usersEmails.forEach((userEmail) => {
+    if (workspace.users.some((user) => {
+      user.email === userEmail;
+    })) {
+      removed.push(user);
+    }
+  });
+  console.log(removed);*/
+  /* removed.forEach((user) => { // Remuevo a los users sacados el workspace
+    user.workspaces = _.difference(workspace.users, removed);
+  });
+  workspace.users = _.difference(workspace.users, removed);
+  if (!await finishedUsersUpdateTransaction(workspace, workspace.users)) {
+    return response.status(500).send(error);
+  }*/
+  return response.status(200).send('Users were successfully removed');
+});
+
 router.patch('/:wsname/fields', auth, async (request, response) => {
   const fields = ['name', 'imageUrl', 'location', 'description',
     'welcomeMessage'];
@@ -189,7 +272,6 @@ router.patch('/:wsname/fields', auth, async (request, response) => {
       _.pick(request.body, fields), {new: true});
   return response.status(200).send(_.pick(workspace, fields));
 });
-
 
 router.delete('/:wsname', [auth],
     async (request, response) => {
@@ -218,6 +300,24 @@ async function finishedJoinTransaction(user, workspace) {
   transaction = new Transaction();
   transaction.update(Workspace.modelName, workspace._id, workspace);
   transaction.update(User.modelName, user._id, user);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedUsersUpdateTransaction(workspace, users) {
+  transaction = new Transaction();
+  transaction.update(Workspace.modelName, workspace._id, workspace);
+  users.forEach((user) => {
+    transaction.update(User.modelName, user._id, user);
+  });
 
   try {
     await transaction.run();

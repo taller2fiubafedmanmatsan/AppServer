@@ -457,7 +457,6 @@ describe('/api/workspaces', ()=> {
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining(['name', 'admins']));
 
-      console.log(updatedWorkspace.admins);
       expect(updatedWorkspace.admins.length).toEqual(1);
     });
 
@@ -555,6 +554,188 @@ describe('/api/workspaces', ()=> {
       expect(response.status).toBe(403);
       let msg = '';
       msg = `You have no permissions to modify ${myWorkspace.name} workspace`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if workspace doesn't exist`, async () => {
+      myWorkspace.name = 'a';
+      const response = await execute(token);
+
+      expect(response.status).toBe(404);
+      const msg = 'Workspace not found.';
+      expect(response.text).toEqual(msg);
+    });
+  });
+
+  describe('PATCH /:wsname/addUsers', ()=> {
+    let name;
+    let myWorkspace;
+    let users;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail,
+            admins: [userEmail, secondUserEmail], users: users,
+            description: 'a', welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      users = [userEmail, secondUserEmail];
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterEach(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .patch(`/api/workspaces/${myWorkspace.name}/addUsers`)
+          .set('x-auth-token', token)
+          .send({users: users});
+    };
+
+    it('should let creator add the second user to user list', async () => {
+      users = [thirdUserEmail];
+      const response = await execute(token);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('users', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'users']));
+
+      const usersEmails = updatedWorkspace.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.arrayContaining(users));
+    });
+
+    it('should let admin add the second user to user list', async () => {
+      users = [thirdUserEmail];
+      const response = await execute(secondToken);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('users', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'users']));
+
+      const usersEmails = updatedWorkspace.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.arrayContaining(users));
+    });
+
+    it('should not add the same user twice in the user list', async () => {
+      const response = await execute(token);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('users', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'users']));
+
+      expect(updatedWorkspace.users.length).toEqual(2);
+    });
+
+    it(`should return 403 if user doesn't belong to workspace`, async () => {
+      const response = await execute(thirdToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to modify ${myWorkspace.name}`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if workspace doesn't exist`, async () => {
+      myWorkspace.name = 'a';
+      const response = await execute(token);
+
+      expect(response.status).toBe(404);
+      const msg = 'Workspace not found.';
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 400 if no users were specified`, async () => {
+      users = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+      const msg = 'No new users were specified.';
+      expect(response.text).toEqual(msg);
+    });
+  });
+
+  describe('PATCH /:wsname/removeUsers', ()=> {
+    let name;
+    let myWorkspace;
+    let users;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: name, creator: userEmail, admins: [userEmail],
+            users: users, description: 'a',
+            welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'workspaceName';
+      users = [userEmail, secondUserEmail];
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: name});
+    });
+
+    afterEach(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .patch(`/api/workspaces/${myWorkspace.name}/removeUsers`)
+          .set('x-auth-token', token)
+          .send({users: users});
+    };
+
+    it('should remove the second user from admin list', async () => {
+      users = [secondUserEmail];
+      const response = await execute(token);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('users', 'email');
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedWorkspace.users.map((admin) => {
+        return admin.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.not.arrayContaining(users));
+      expect(usersEmails).toEqual(expect.arrayContaining([userEmail]));
+    });
+
+    it(`should return 403 if user doesn't own the workspace`, async () => {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to modify ${myWorkspace.name}`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 403 if user doesn't belong to workspace`, async () => {
+      const response = await execute(thirdToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to modify ${myWorkspace.name}`;
       expect(response.text).toEqual(msg);
     });
 
