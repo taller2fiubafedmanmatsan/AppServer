@@ -539,6 +539,14 @@ describe('/api/workspaces', ()=> {
       expect(adminsEmails).toEqual(expect.arrayContaining([userEmail]));
     });
 
+    it('should not allow the removal of the workspace creator', async () => {
+      admins = [userEmail];
+      const response = await execute(token);
+      expect(response.status).toBe(403);
+      msg = `Workspace creator cannot be removed from moderators list.`;
+      expect(response.text).toEqual(msg);
+    });
+
     it(`should return 403 if user doesn't own the workspace`, async () => {
       const response = await execute(secondToken);
 
@@ -719,6 +727,14 @@ describe('/api/workspaces', ()=> {
       users.push(userEmail);
       expect(usersEmails).toEqual(expect.not.arrayContaining(users));
       expect(usersEmails).toEqual(expect.arrayContaining([userEmail]));
+    });
+
+    it('should not allow the removal of the workspace creator', async () => {
+      users = [userEmail];
+      const response = await execute(token);
+      expect(response.status).toBe(403);
+      msg = `Workspace creator cannot be removed from users list.`;
+      expect(response.text).toEqual(msg);
     });
 
     it(`should return 403 if user doesn't own the workspace`, async () => {

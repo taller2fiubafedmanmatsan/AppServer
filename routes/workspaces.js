@@ -139,11 +139,11 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
 router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
   let workspace = await Workspace.findOne({name: request.params.wsname})
       .populate('users', 'email')
-      .populate('admins', 'email');
+      .populate('admins', 'email')
+      .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
-
-  if (request.user._id != workspace.creator) {
+  if (request.user._id != workspace.creator._id) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -151,6 +151,11 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
   const adminsEmails = request.body.admins;
   if (!adminsEmails) {
     return response.status(400).send('No admins to remove were specified.');
+  }
+
+  if (adminsEmails.includes(workspace.creator.email)) {
+    const msg = 'Workspace creator cannot be removed from moderators list.';
+    return response.status(403).send(msg);
   }
 
   adminsEmails.forEach((adminEmail) => {
@@ -199,7 +204,8 @@ router.patch('/:wsname/addUsers', auth,
 
 router.patch('/:wsname/removeUsers', auth, async (request, response) => {
   const workspace = await Workspace.findOne({name: request.params.wsname})
-      .populate('users', 'email workspaces');
+      .populate('users', 'email workspaces')
+      .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
@@ -212,6 +218,11 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
     return response.status(400).send('No users to remove were specified.');
   }
 
+  if (request.body.users.includes(workspace.creator.email)) {
+    const msg = 'Workspace creator cannot be removed from users list.';
+    return response.status(403).send(msg);
+  }
+
   const usersToRemove = await User.find({email: {$in: request.body.users}});
 
   usersToRemove.forEach((user) =>{
@@ -222,28 +233,10 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
       return wsUser.email != user.email;
     });
   });
-  console.log(usersToRemove);
 
   if (!await finishedUsersUpdateTransaction(workspace, usersToRemove)) {
     return response.status(500).send(error);
   }
-
-  /* const removed = []; // Los que se van
-  usersEmails.forEach((userEmail) => {
-    if (workspace.users.some((user) => {
-      user.email === userEmail;
-    })) {
-      removed.push(user);
-    }
-  });
-  console.log(removed);*/
-  /* removed.forEach((user) => { // Remuevo a los users sacados el workspace
-    user.workspaces = _.difference(workspace.users, removed);
-  });
-  workspace.users = _.difference(workspace.users, removed);
-  if (!await finishedUsersUpdateTransaction(workspace, workspace.users)) {
-    return response.status(500).send(error);
-  }*/
   return response.status(200).send('Users were successfully removed');
 });
 
