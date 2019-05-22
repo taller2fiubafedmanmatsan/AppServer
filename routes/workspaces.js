@@ -119,11 +119,9 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
     return response.status(400).send(msg);
   }
 
-  adminsEmails.forEach((adminEmail) => {
-    const newAdmin = workspace.users.find((user) => {
-      return user.email == adminEmail;
-    });
+  const newAdmins = await User.find({email: {$in: request.body.admins}});
 
+  newAdmins.forEach((newAdmin) => {
     if (!workspace.admins.some((admin) => {
       return admin.email == newAdmin.email;
     })) {
