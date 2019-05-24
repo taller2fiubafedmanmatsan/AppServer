@@ -281,7 +281,7 @@ router.delete('/:wsname', [auth],
       const channels = workspace.channels;
 
       if (!await finishedDeletionTransaction(workspace, channels, users)) {
-        return response.status(500).send(error);
+        // return response.status(500).send(error);
       }
       const resMsg = `Deleted ${workspace.name} successfully`;
       return response.status(200).send(resMsg);
@@ -323,12 +323,11 @@ async function finishedUsersUpdateTransaction(workspace, users) {
 
 async function finishedDeletionTransaction(workspace, channels, users) {
   transaction = new Transaction();
-
   users.forEach((user) => {
     user.workspaces = user.workspaces.filter((aWorkspace) => {
-      return aWorkspace._id != workspace._id;
+      return !_.isEqual(aWorkspace._id, workspace._id);
     });
-    transaction.update(User.modelName, user._id, user);
+    transaction.insert(User.modelName, user);
   });
 
   channels.forEach((channel) => {
