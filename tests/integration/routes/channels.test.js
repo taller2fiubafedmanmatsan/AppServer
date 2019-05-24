@@ -587,7 +587,7 @@ describe('/api/channels', ()=> {
       expect(response.status).toBe(200);
     });
 
-    it('should let the admin change delete the channel', async () => {
+    it('should let the admin delete the channel', async () => {
       const response = await execute(adminToken);
 
       expect(await Channel.findOne({name: name})).toBe(null);

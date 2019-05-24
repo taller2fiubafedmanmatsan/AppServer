@@ -30,7 +30,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl topics')
+        .populate('users', 'name nickname email photoUrl')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
@@ -71,9 +71,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (error) return response.status(400).send(error.details[0].message);
 
       const workspace = request.workspace;
-      if (!workspace.admins.some((userId) => userId == request.user._id)&&
-          !workspace.users.some((userId) => userId == request.user._id)&&
-          (workspace.creator != request.user._id)) {
+      if (!workspace.users.some((userId) => userId == request.user._id)) {
         const msg = 'The user cannot create channels in this workspace';
         return response.status(403).send(msg);
       }
@@ -118,9 +116,6 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         return response.status(500).send(error);
       }
 
-      // users.forEach(async (user) => {
-      //   await firebase.subscribeToTopic(user, newTopic);
-      // });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
@@ -138,8 +133,7 @@ router.patch('/:channelName/workspace/:workspaceName', auth,
       let channel = request.channel;
 
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id) &&
-               (workspace.creator != request.user._id)) {
+               (channel.creator != request.user._id)) {
         const msg = `You cannot modify ${channel.name} channel`;
         return response.status(403).send(msg);
       }
@@ -204,8 +198,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
       const channel = request.channel;
 
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id) &&
-               (workspace.creator != request.user._id)) {
+               (channel.creator != request.user._id)) {
         const msg = `You cannot delete ${channel.name} channel`;
         return response.status(403).send(msg);
       }
