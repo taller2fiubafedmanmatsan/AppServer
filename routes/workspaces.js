@@ -50,8 +50,18 @@ router.post('/', [auth, usersExist], async (request, response) => {
     return user._id;
   });
   ws.users = request.validWorkspace.users.map((user) => {
-    return _.pick(user, '_id', 'name');
+    return user._id;
   });
+
+  if (!ws.admins.includes(ws.creator)) {
+    const msg = 'Workspace creator is not included in admins list.';
+    return response.status(400).send(msg);
+  }
+
+  if (_.intersection(ws.admins, ws.users).length < ws.admins.length) {
+    const msg = 'Some admins are not included in the users list.';
+    return response.status(400).send(msg);
+  }
 
   workspace = new Workspace(_.pick(ws,
       [

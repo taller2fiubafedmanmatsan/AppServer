@@ -172,6 +172,24 @@ describe('/api/workspaces', ()=> {
       expect(response.status).toBe(404);
       expect(response.text).toEqual('Invalid users.');
     });
+
+    it('should return 400 the creator is not in admins list', async ()=> {
+      admins = [secondUserEmail];
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+      const msg = 'Workspace creator is not included in admins list.';
+      expect(response.text).toEqual(msg);
+    });
+
+    it('should return 400 the admins are not in the users list', async ()=> {
+      users = [secondUserEmail];
+      const response = await execute();
+
+      expect(response.status).toBe(400);
+      const msg = 'Some admins are not included in the users list.';
+      expect(response.text).toEqual(msg);
+    });
   });
 
   describe('PATCH /:wsname', ()=> {
