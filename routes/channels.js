@@ -154,14 +154,14 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       const fields = ['users'];
 
       const users = await User.find({email: {$in: request.body.users}});
-      if (!users) return response.status(400).send('No users where provided.');
+      if (!users) return response.status(400).send('No users were provided.');
 
       let channel = request.channel;
 
       if (channel.isPrivate &&
         !channel.users.some((user) => user._id == request.user._id)) {
-        return response.status(403).send('The user cannot add users' +
-                                          ' this channel');
+        const msg = 'The user cannot add members to this channel';
+        return response.status(403).send(msg);
       }
 
       channel = await Channel.findByIdAndUpdate(channel._id,
@@ -189,6 +189,39 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
         };
       }
 
+      return response.status(200).send(_.pick(channel, fields));
+    });
+
+router.patch('/:channelName/workspace/:workspaceName/users', auth,
+    async (request, response) => {
+      const fields = ['users'];
+
+      const users = await User.find({email: {$in: request.body.users}});
+      if (!users) return response.status(400).send('No users were provided.');
+
+      const channel = request.channel;
+
+      if (channel.creator._id != request.user._id) {
+        const msg = 'The user cannot remove members of this channel.';
+        return response.status(403).send(msg);
+      }
+
+      channel.users = channel.users.filter((user) => {
+        return !(users.some((userToRemove) => {
+          return _.isEqual(userToRemove._id, user._id);
+        }));
+      });
+
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users.forEach(async (user) => {
+        user.topics = user.topics.filter((aTopic) => {
+          return aTopic != topic;
+        });
+        // await firebase.unsubscribeFromTopic(user, topic);
+      });
+      if (!await finishedUpdateTransaction(channel, users)) {
+        return response.status(500).send(error);
+      }
       return response.status(200).send(_.pick(channel, fields));
     });
 
@@ -223,6 +256,24 @@ async function finishedCreationTransaction(workspace, channel, page, users) {
   users.forEach((user) => {
     return transaction.update(User.modelName, user._id, user);
   });
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedUpdateTransaction(channel, users) {
+  transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+  transaction.update(Channel.modelName, channel._id, channel);
 
   try {
     await transaction.run();

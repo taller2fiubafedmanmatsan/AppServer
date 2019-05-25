@@ -341,7 +341,6 @@ describe('/api/channels', ()=> {
 
     afterAll(async ()=> {
       await Channel.remove({});
-      // await User.remove({});
     });
 
     const execute = (token)=> {
@@ -357,7 +356,6 @@ describe('/api/channels', ()=> {
       users = [user2.email, user3.email];
       const response = await execute(token);
 
-      console.log(response.text);
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');
       expect(response.status).toBe(200);
@@ -373,13 +371,103 @@ describe('/api/channels', ()=> {
       const response = await execute(nonMemberToken);
 
       expect(response.status).toBe(403);
-      const msg = 'The user cannot add users this channel';
+      const msg = 'The user cannot add members to this channel';
       expect(response.text).toEqual(msg);
     });
 
     it(`should return 404 if the channel doesn't exist`, async () => {
       myChannel.name = 'otherName';
       const response = await execute(nonMemberToken);
+
+      expect(response.status).toBe(404);
+      const msg = 'Invalid channel.';
+      expect(response.text).toEqual(msg);
+    });
+  });
+
+  describe('PATCH /:channelName/workspace/:workspaceName/users', () => {
+    let name;
+    let creator;
+    let users;
+    let isPrivate;
+    let description;
+    let welcomeMessage;
+    let myChannel;
+    const userEmail2 = 'user2@test.com';
+    const userEmail3 = 'user3@test.com';
+    let user2;
+    let user3;
+
+    const createChannel = ()=> {
+      return request(server)
+          .post(`/api/channels/workspace/${workspaceName}`)
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, isPrivate,
+            description, welcomeMessage
+          });
+    };
+
+    beforeEach(async ()=> {
+      name = 'channelName';
+      creator = userEmail;
+      users = [userEmail, userEmail2, userEmail3];
+      isPrivate = true;
+      description = 'a';
+      welcomeMessage = 'a';
+      workspaceName = workspace.name;
+      await createChannel();
+      myChannel = await Channel.findOne({name: 'channelName'});
+      await createUser(userEmail2);
+      user2 = await User.findOne({email: userEmail2});
+      await createUser(userEmail3);
+      user3 = await User.findOne({email: userEmail3});
+    });
+
+    afterAll(async ()=> {
+      await Channel.remove({});
+    });
+
+    const execute = (token)=> {
+      const chUrl = `channels/${myChannel.name}`;
+      const wsUrl = `workspace/${workspaceName}`;
+      return request(server)
+          .patch(`/api/${chUrl}/${wsUrl}/users`)
+          .set('x-auth-token', token)
+          .send({users});
+    };
+
+    it('should remove user 2 and 3 from the channel', async () => {
+      users = [user2.email, user3.email];
+      const response = await execute(token);
+
+      const updatedChannel = await Channel.findOne({name: myChannel.name})
+          .populate('users', 'email');
+      const updatedUser2 = await User.findById(user2._id);
+      const updatedUser3 = await User.findById(user3._id);
+
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedChannel.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.not.arrayContaining(users));
+      expect(updatedUser2.topics.length).toEqual(0);
+      expect(updatedUser3.topics.length).toEqual(0);
+    });
+
+    it(`should return 403 if user doesn't belong to the channel`, async () => {
+      const response = await execute(nonMemberToken);
+
+      expect(response.status).toBe(403);
+      const msg = 'The user cannot remove members of this channel.';
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if the channel doesn't exist`, async () => {
+      myChannel.name = 'otherName';
+      const response = await execute(token);
 
       expect(response.status).toBe(404);
       const msg = 'Invalid channel.';
