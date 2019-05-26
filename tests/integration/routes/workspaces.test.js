@@ -209,7 +209,6 @@ describe('/api/workspaces', ()=> {
       const usersEmails = updatedWorkspace.users.map((user) => {
         return user.email;
       });
-      console.log(usersEmails);
       expect(usersEmails.includes(secondUserEmail)).toBe(true);
     });
 
