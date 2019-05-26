@@ -206,12 +206,10 @@ describe('/api/workspaces', ()=> {
       const updatedWorkspace = await Workspace.findOne({name: myWorkspace.name})
           .populate('users', 'email');
       expect(response.status).toBe(200);
-
       const usersEmails = updatedWorkspace.users.map((user) => {
         return user.email;
       });
       expect(usersEmails.includes(secondUserEmail)).toBe(true);
-      // expect(usersEmails).toEqual(expect.arrayContaining(users));
     });
 
     it('should return 404 if workspace is invalid', async () => {
