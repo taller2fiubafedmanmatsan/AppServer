@@ -63,6 +63,7 @@ describe('/api/channels', ()=> {
     workspace = await Workspace.findOne({name: 'WSname'});
     firebase.subscribeToTopic = jest.fn();
     firebase.sendMessageToTopic = jest.fn();
+    firebase.unsubscribeFromTopic = jest.fn();
   });
 
   afterAll(async ()=> {
@@ -440,6 +441,26 @@ describe('/api/channels', ()=> {
     it('should remove user 2 and 3 from the channel', async () => {
       users = [user2.email, user3.email];
       const response = await execute(token);
+
+      const updatedChannel = await Channel.findOne({name: myChannel.name})
+          .populate('users', 'email');
+      const updatedUser2 = await User.findById(user2._id);
+      const updatedUser3 = await User.findById(user3._id);
+
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedChannel.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.not.arrayContaining(users));
+      expect(updatedUser2.topics.length).toEqual(0);
+      expect(updatedUser3.topics.length).toEqual(0);
+    });
+
+    it('should let workspace admin remove user 2 and 3', async () => {
+      users = [user2.email, user3.email];
+      const response = await execute(adminToken);
 
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');

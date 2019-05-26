@@ -30,7 +30,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl')
+        .populate('users', 'name nickname email photoUrl topics')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
@@ -196,12 +196,14 @@ router.patch('/:channelName/workspace/:workspaceName/users', auth,
     async (request, response) => {
       const fields = ['users'];
 
-      const users = await User.find({email: {$in: request.body.users}});
+      let users = await User.find({email: {$in: request.body.users}});
       if (!users) return response.status(400).send('No users were provided.');
 
       const channel = request.channel;
+      const workspace = request.workspace;
 
-      if (channel.creator._id != request.user._id) {
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id)) {
         const msg = 'The user cannot remove members of this channel.';
         return response.status(403).send(msg);
       }
@@ -213,12 +215,8 @@ router.patch('/:channelName/workspace/:workspaceName/users', auth,
       });
 
       const topic = `${request.workspace.name}-${channel.name}`;
-      users.forEach(async (user) => {
-        user.topics = user.topics.filter((aTopic) => {
-          return aTopic != topic;
-        });
-        // await firebase.unsubscribeFromTopic(user, topic);
-      });
+      users = await unsubscribeUsersFromTopic(users, topic);
+
       if (!await finishedUpdateTransaction(channel, users)) {
         return response.status(500).send(error);
       }
@@ -241,7 +239,11 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
         return aChannel._id != channel._id;
       });
 
-      if (!await finishedDeletionTransaction(workspace, channel)) {
+      let users = channel.users;
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users = await unsubscribeUsersFromTopic(users, topic);
+
+      if (!await finishedDeletionTransaction(workspace, channel, users)) {
         return response.status(500).send(error);
       }
       return response.status(200).send(`Deleted ${channel.name} successfully`);
@@ -286,8 +288,12 @@ async function finishedUpdateTransaction(channel, users) {
   }
 }
 
-async function finishedDeletionTransaction(workspace, channel) {
+async function finishedDeletionTransaction(workspace, channel, users) {
   transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+
   channel.pages.forEach((aPage) => {
     aPage.messages.forEach((aMessage) => {
       transaction.remove(Message.modelName, aMessage);
@@ -306,5 +312,16 @@ async function finishedDeletionTransaction(workspace, channel) {
     return false;
   }
 }
+
+async function unsubscribeUsersFromTopic(users, topic) {
+  users.forEach(async (user) => {
+    user.topics = user.topics.filter((aTopic) => {
+      return aTopic != topic;
+    });
+    await firebase.unsubscribeFromTopic(user, topic);
+  });
+  return users;
+}
+
 
 module.exports = router;
