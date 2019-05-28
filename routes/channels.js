@@ -71,9 +71,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (error) return response.status(400).send(error.details[0].message);
 
       const workspace = request.workspace;
-      if (!workspace.admins.some((userId) => userId == request.user._id)&&
-          !workspace.users.some((userId) => userId == request.user._id)&&
-          (workspace.creator != request.user._id)) {
+      if (!workspace.users.some((userId) => userId == request.user._id)) {
         const msg = 'The user cannot create channels in this workspace';
         return response.status(403).send(msg);
       }
@@ -118,9 +116,6 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         return response.status(500).send(error);
       }
 
-      // users.forEach(async (user) => {
-      //   await firebase.subscribeToTopic(user, newTopic);
-      // });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
@@ -138,8 +133,7 @@ router.patch('/:channelName/workspace/:workspaceName', auth,
       let channel = request.channel;
 
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id) &&
-               (workspace.creator != request.user._id)) {
+               (channel.creator != request.user._id)) {
         const msg = `You cannot modify ${channel.name} channel`;
         return response.status(403).send(msg);
       }
@@ -160,14 +154,14 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       const fields = ['users'];
 
       const users = await User.find({email: {$in: request.body.users}});
-      if (!users) return response.status(400).send('No users where provided.');
+      if (!users) return response.status(400).send('No users were provided.');
 
       let channel = request.channel;
 
       if (channel.isPrivate &&
         !channel.users.some((user) => user._id == request.user._id)) {
-        return response.status(403).send('The user cannot add users' +
-                                          ' this channel');
+        const msg = 'The user cannot add members to this channel';
+        return response.status(403).send(msg);
       }
 
       channel = await Channel.findByIdAndUpdate(channel._id,
@@ -198,14 +192,44 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       return response.status(200).send(_.pick(channel, fields));
     });
 
+router.patch('/:channelName/workspace/:workspaceName/users', auth,
+    async (request, response) => {
+      const fields = ['users'];
+
+      let users = await User.find({email: {$in: request.body.users}});
+      if (!users) return response.status(400).send('No users were provided.');
+
+      const channel = request.channel;
+      const workspace = request.workspace;
+
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id)) {
+        const msg = 'The user cannot remove members of this channel.';
+        return response.status(403).send(msg);
+      }
+
+      channel.users = channel.users.filter((user) => {
+        return !(users.some((userToRemove) => {
+          return _.isEqual(userToRemove._id, user._id);
+        }));
+      });
+
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users = await unsubscribeUsersFromTopic(users, topic);
+
+      if (!await finishedUpdateTransaction(channel, users)) {
+        return response.status(500).send(error);
+      }
+      return response.status(200).send(_.pick(channel, fields));
+    });
+
 router.delete('/:channelName/workspace/:workspaceName', [auth],
     async (request, response) => {
       const workspace = request.workspace;
       const channel = request.channel;
 
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id) &&
-               (workspace.creator != request.user._id)) {
+               (channel.creator != request.user._id)) {
         const msg = `You cannot delete ${channel.name} channel`;
         return response.status(403).send(msg);
       }
@@ -215,7 +239,11 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
         return aChannel._id != channel._id;
       });
 
-      if (!await finishedDeletionTransaction(workspace, channel)) {
+      let users = channel.users;
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users = await unsubscribeUsersFromTopic(users, topic);
+
+      if (!await finishedDeletionTransaction(workspace, channel, users)) {
         return response.status(500).send(error);
       }
       return response.status(200).send(`Deleted ${channel.name} successfully`);
@@ -242,8 +270,30 @@ async function finishedCreationTransaction(workspace, channel, page, users) {
   }
 }
 
-async function finishedDeletionTransaction(workspace, channel) {
+async function finishedUpdateTransaction(channel, users) {
   transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+  transaction.update(Channel.modelName, channel._id, channel);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedDeletionTransaction(workspace, channel, users) {
+  transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+
   channel.pages.forEach((aPage) => {
     aPage.messages.forEach((aMessage) => {
       transaction.remove(Message.modelName, aMessage);
@@ -262,5 +312,16 @@ async function finishedDeletionTransaction(workspace, channel) {
     return false;
   }
 }
+
+async function unsubscribeUsersFromTopic(users, topic) {
+  users.forEach(async (user) => {
+    user.topics = user.topics.filter((aTopic) => {
+      return aTopic != topic;
+    });
+    await firebase.unsubscribeFromTopic(user, topic);
+  });
+  return users;
+}
+
 
 module.exports = router;
