@@ -16,6 +16,7 @@ const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
 const router = express.Router();
+const firebase = require('../helpers/firebase_helper');
 
 Fawn.init(mongoose);
 
@@ -212,7 +213,7 @@ router.patch('/:wsname/addUsers', auth,
 
 router.patch('/:wsname/removeUsers', auth, async (request, response) => {
   const workspace = await Workspace.findOne({name: request.params.wsname})
-      .populate('users', 'email workspaces')
+      .populate('users', 'email workspaces channels')
       .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
@@ -233,7 +234,8 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
 
   const usersToRemove = await User.find({email: {$in: request.body.users}});
 
-  usersToRemove.forEach((user) =>{
+  usersToRemove.forEach(async (user) =>{
+    await unsubscribeFromChannels(user, workspace.channels);
     user.workspaces = user.workspaces.filter((aWorkspace) => {
       return aWorkspace.name == workspace.name;
     });
@@ -290,8 +292,12 @@ router.delete('/:wsname', [auth],
       const users = workspace.users;
       const channels = workspace.channels;
 
+      users.forEach(async (user) => {
+        await unsubscribeFromChannels(user, channels);
+      });
+
       if (!await finishedDeletionTransaction(workspace, channels, users)) {
-        // return response.status(500).send(error);
+        return response.status(500).send(error);
       }
       const resMsg = `Deleted ${workspace.name} successfully`;
       return response.status(200).send(resMsg);
@@ -362,4 +368,11 @@ async function finishedDeletionTransaction(workspace, channels, users) {
     return false;
   }
 }
+
+async function unsubscribeFromChannels(user, channels) {
+  channels.forEach(async (channel) => {
+    await firebase.unsubscribeFromTopic(user, channel._id);
+  });
+}
+
 module.exports = router;
