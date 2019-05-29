@@ -16,6 +16,7 @@ const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
 const router = express.Router();
+const firebase = require('../helpers/firebase_helper');
 
 Fawn.init(mongoose);
 
@@ -50,8 +51,18 @@ router.post('/', [auth, usersExist], async (request, response) => {
     return user._id;
   });
   ws.users = request.validWorkspace.users.map((user) => {
-    return _.pick(user, '_id', 'name');
+    return user._id;
   });
+
+  if (!ws.admins.includes(ws.creator)) {
+    const msg = 'Workspace creator is not included in admins list.';
+    return response.status(400).send(msg);
+  }
+
+  if (_.intersection(ws.admins, ws.users).length < ws.admins.length) {
+    const msg = 'Some admins are not included in the users list.';
+    return response.status(400).send(msg);
+  }
 
   workspace = new Workspace(_.pick(ws,
       [
@@ -119,11 +130,9 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
     return response.status(400).send(msg);
   }
 
-  adminsEmails.forEach((adminEmail) => {
-    const newAdmin = workspace.users.find((user) => {
-      return user.email == adminEmail;
-    });
+  const newAdmins = await User.find({email: {$in: request.body.admins}});
 
+  newAdmins.forEach((newAdmin) => {
     if (!workspace.admins.some((admin) => {
       return admin.email == newAdmin.email;
     })) {
@@ -139,11 +148,11 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
 router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
   let workspace = await Workspace.findOne({name: request.params.wsname})
       .populate('users', 'email')
-      .populate('admins', 'email');
+      .populate('admins', 'email')
+      .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
-
-  if (request.user._id != workspace.creator) {
+  if (request.user._id != workspace.creator._id) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -151,6 +160,11 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
   const adminsEmails = request.body.admins;
   if (!adminsEmails) {
     return response.status(400).send('No admins to remove were specified.');
+  }
+
+  if (adminsEmails.includes(workspace.creator.email)) {
+    const msg = 'Workspace creator cannot be removed from moderators list.';
+    return response.status(403).send(msg);
   }
 
   adminsEmails.forEach((adminEmail) => {
@@ -199,7 +213,8 @@ router.patch('/:wsname/addUsers', auth,
 
 router.patch('/:wsname/removeUsers', auth, async (request, response) => {
   const workspace = await Workspace.findOne({name: request.params.wsname})
-      .populate('users', 'email workspaces');
+      .populate('users', 'email workspaces channels')
+      .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
@@ -212,9 +227,15 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
     return response.status(400).send('No users to remove were specified.');
   }
 
+  if (request.body.users.includes(workspace.creator.email)) {
+    const msg = 'Workspace creator cannot be removed from users list.';
+    return response.status(403).send(msg);
+  }
+
   const usersToRemove = await User.find({email: {$in: request.body.users}});
 
-  usersToRemove.forEach((user) =>{
+  usersToRemove.forEach(async (user) =>{
+    await unsubscribeFromChannels(user, workspace.channels);
     user.workspaces = user.workspaces.filter((aWorkspace) => {
       return aWorkspace.name == workspace.name;
     });
@@ -222,28 +243,10 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
       return wsUser.email != user.email;
     });
   });
-  console.log(usersToRemove);
 
   if (!await finishedUsersUpdateTransaction(workspace, usersToRemove)) {
     return response.status(500).send(error);
   }
-
-  /* const removed = []; // Los que se van
-  usersEmails.forEach((userEmail) => {
-    if (workspace.users.some((user) => {
-      user.email === userEmail;
-    })) {
-      removed.push(user);
-    }
-  });
-  console.log(removed);*/
-  /* removed.forEach((user) => { // Remuevo a los users sacados el workspace
-    user.workspaces = _.difference(workspace.users, removed);
-  });
-  workspace.users = _.difference(workspace.users, removed);
-  if (!await finishedUsersUpdateTransaction(workspace, workspace.users)) {
-    return response.status(500).send(error);
-  }*/
   return response.status(200).send('Users were successfully removed');
 });
 
@@ -289,6 +292,10 @@ router.delete('/:wsname', [auth],
       const users = workspace.users;
       const channels = workspace.channels;
 
+      users.forEach(async (user) => {
+        await unsubscribeFromChannels(user, channels);
+      });
+
       if (!await finishedDeletionTransaction(workspace, channels, users)) {
         return response.status(500).send(error);
       }
@@ -332,12 +339,11 @@ async function finishedUsersUpdateTransaction(workspace, users) {
 
 async function finishedDeletionTransaction(workspace, channels, users) {
   transaction = new Transaction();
-
   users.forEach((user) => {
     user.workspaces = user.workspaces.filter((aWorkspace) => {
-      return aWorkspace._id != workspace._id;
+      return !_.isEqual(aWorkspace._id, workspace._id);
     });
-    transaction.update(User.modelName, user._id, user);
+    transaction.insert(User.modelName, user);
   });
 
   channels.forEach((channel) => {
@@ -362,4 +368,11 @@ async function finishedDeletionTransaction(workspace, channels, users) {
     return false;
   }
 }
+
+async function unsubscribeFromChannels(user, channels) {
+  channels.forEach(async (channel) => {
+    await firebase.unsubscribeFromTopic(user, channel._id);
+  });
+}
+
 module.exports = router;
