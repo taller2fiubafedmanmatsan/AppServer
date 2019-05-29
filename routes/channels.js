@@ -90,9 +90,8 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       }
       workspace.channels.push(channel._id);
 
-      const newTopic = `${workspace.name}-${channel.name}`;
+      const newTopic = `${channel._id}`;
       const users = request.validChannel.users;
-
       if (Array.isArray(users)) {
         users.forEach(async (user) => {
           if (!user.topics.includes(newTopic)) {
@@ -111,8 +110,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         };
       }
 
-
-      if (!finishedCreationTransaction(workspace, channel, page, users)) {
+      if (!await finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
 
@@ -168,7 +166,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           {$addToSet: {users: users.map((user) => user._id)}},
           {new: true});
 
-      const topic = `${request.workspace.name}-${channel.name}`;
+      const topic = `${channel._id}`;
       if (Array.isArray(users)) {
         users.forEach(async (user) => {
           if (!user.topics.includes(topic)) {
@@ -214,9 +212,8 @@ router.patch('/:channelName/workspace/:workspaceName/users', auth,
         }));
       });
 
-      const topic = `${request.workspace.name}-${channel.name}`;
+      const topic = `${channel._id}`;
       users = await unsubscribeUsersFromTopic(users, topic);
-
       if (!await finishedUpdateTransaction(channel, users)) {
         return response.status(500).send(error);
       }
@@ -240,7 +237,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
       });
 
       let users = channel.users;
-      const topic = `${request.workspace.name}-${channel.name}`;
+      const topic = `${channel._id}`;
       users = await unsubscribeUsersFromTopic(users, topic);
 
       if (!await finishedDeletionTransaction(workspace, channel, users)) {
@@ -256,7 +253,7 @@ async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
   users.forEach((user) => {
-    return transaction.update(User.modelName, user._id, user);
+    transaction.insert(User.modelName, user);
   });
 
   try {
@@ -316,7 +313,7 @@ async function finishedDeletionTransaction(workspace, channel, users) {
 async function unsubscribeUsersFromTopic(users, topic) {
   users.forEach(async (user) => {
     user.topics = user.topics.filter((aTopic) => {
-      return aTopic != topic;
+      return aTopic !== topic;
     });
     await firebase.unsubscribeFromTopic(user, topic);
   });
