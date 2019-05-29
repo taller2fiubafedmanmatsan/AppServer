@@ -75,7 +75,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       }
 
       const sender = await User.findById(request.user._id);
-      const topic = `${request.workspace.name}-${channel.name}`;
+      const topic = `${channel._id}`;
 
       const fbMessage = {
         data: {
