@@ -6,6 +6,7 @@ const channelTransform = require('../middleware/channel_transform');
 const firebase = require('../helpers/firebase_helper');
 const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
+const {Message} = require('../models/message');
 const {User} = require('../models/user');
 
 const router = express.Router();
@@ -29,7 +30,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl')
+        .populate('users', 'name nickname email photoUrl topics')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
@@ -70,9 +71,9 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (error) return response.status(400).send(error.details[0].message);
 
       const workspace = request.workspace;
-      if (!workspace.admins.some((userId) => userId == request.user._id)) {
-        return response.status(403).send('The user cannot create channels' +
-                                          ' in this workspace');
+      if (!workspace.users.some((userId) => userId == request.user._id)) {
+        const msg = 'The user cannot create channels in this workspace';
+        return response.status(403).send(msg);
       }
 
       const page = new Page({
@@ -115,66 +116,52 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         return response.status(500).send(error);
       }
 
-      // users.forEach(async (user) => {
-      //   await firebase.subscribeToTopic(user, newTopic);
-      // });
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
           ]));
     });
 
-router.patch('/', auth, async (request, response) => {
-  const fields = [
-    'name', 'isPrivate',
-    'description', 'welcomeMessage'
-  ];
+router.patch('/:channelName/workspace/:workspaceName', auth,
+    async (request, response) => {
+      const fields = ['name', 'isPrivate', 'description', 'welcomeMessage'];
 
-  const {error} = validateChannelUpdate(_.pick(request.body, fields));
-  if (error) return response.status(400).send(error.details[0].message);
+      const {error} = validateChannelUpdate(_.pick(request.body, fields));
+      if (error) return response.status(400).send(error.details[0].message);
 
-  const {workspaceId, channelId, name} = request.body;
+      const workspace = request.workspace;
+      let channel = request.channel;
 
-  const workspace = await Workspace.
-      findById(workspaceId).
-      populate('channels', 'name');
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id)) {
+        const msg = `You cannot modify ${channel.name} channel`;
+        return response.status(403).send(msg);
+      }
 
-  if (!workspace) return response.status(404).send('Invalid workspace.');
+      const {name} = request.body;
+      if (name && workspace.channels.
+          some((aChannel) => aChannel.name == name)) {
+        return response.status(400).send('Channel already registered.');
+      }
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
-    return response.status(403).send('The user cannot modify channels' +
-                                          ' in this workspace');
-  }
-
-  if (name && workspace.channels.
-      some((aChannel) => aChannel.name == name)) {
-    return response.status(400).send('Channel already registered.');
-  }
-
-  let channel = workspace.channels.find((aChannel) => {
-    return aChannel._id == channelId;
-  });
-
-  if (!channel) return response.status(404).send('Invalid channel.');
-
-  channel = await Channel.findByIdAndUpdate(channel._id,
-      _.pick(request.body, fields), {new: true});
-  return response.status(200).send(_.pick(channel, fields));
-});
+      channel = await Channel.findByIdAndUpdate(channel._id,
+          _.pick(request.body, fields), {new: true});
+      return response.status(200).send(_.pick(channel, fields));
+    });
 
 router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
     async (request, response) => {
       const fields = ['users'];
 
       const users = await User.find({email: {$in: request.body.users}});
-      if (!users) return response.status(400).send('No users where provided.');
+      if (!users) return response.status(400).send('No users were provided.');
 
       let channel = request.channel;
 
       if (channel.isPrivate &&
         !channel.users.some((user) => user._id == request.user._id)) {
-        return response.status(403).send('The user cannot add users' +
-                                          ' this channel');
+        const msg = 'The user cannot add members to this channel';
+        return response.status(403).send(msg);
       }
 
       channel = await Channel.findByIdAndUpdate(channel._id,
@@ -205,6 +192,64 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       return response.status(200).send(_.pick(channel, fields));
     });
 
+router.patch('/:channelName/workspace/:workspaceName/users', auth,
+    async (request, response) => {
+      const fields = ['users'];
+
+      let users = await User.find({email: {$in: request.body.users}});
+      if (!users) return response.status(400).send('No users were provided.');
+
+      const channel = request.channel;
+      const workspace = request.workspace;
+
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id)) {
+        const msg = 'The user cannot remove members of this channel.';
+        return response.status(403).send(msg);
+      }
+
+      channel.users = channel.users.filter((user) => {
+        return !(users.some((userToRemove) => {
+          return _.isEqual(userToRemove._id, user._id);
+        }));
+      });
+
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users = await unsubscribeUsersFromTopic(users, topic);
+
+      if (!await finishedUpdateTransaction(channel, users)) {
+        return response.status(500).send(error);
+      }
+      return response.status(200).send(_.pick(channel, fields));
+    });
+
+router.delete('/:channelName/workspace/:workspaceName', [auth],
+    async (request, response) => {
+      const workspace = request.workspace;
+      const channel = request.channel;
+
+      if (!workspace.admins.some((userId) => userId == request.user._id) &&
+               (channel.creator != request.user._id)) {
+        const msg = `You cannot delete ${channel.name} channel`;
+        return response.status(403).send(msg);
+      }
+
+      // Remove channel from workspace
+      workspace.channels = workspace.channels.filter((aChannel) => {
+        return aChannel._id != channel._id;
+      });
+
+      let users = channel.users;
+      const topic = `${request.workspace.name}-${channel.name}`;
+      users = await unsubscribeUsersFromTopic(users, topic);
+
+      if (!await finishedDeletionTransaction(workspace, channel, users)) {
+        return response.status(500).send(error);
+      }
+      return response.status(200).send(`Deleted ${channel.name} successfully`);
+    });
+
+
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
   transaction.insert(Channel.modelName, channel);
@@ -224,5 +269,59 @@ async function finishedCreationTransaction(workspace, channel, page, users) {
     return false;
   }
 }
+
+async function finishedUpdateTransaction(channel, users) {
+  transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+  transaction.update(Channel.modelName, channel._id, channel);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedDeletionTransaction(workspace, channel, users) {
+  transaction = new Transaction();
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+
+  channel.pages.forEach((aPage) => {
+    aPage.messages.forEach((aMessage) => {
+      transaction.remove(Message.modelName, aMessage);
+    });
+    transaction.remove(Page.modelName, aPage);
+  });
+  transaction.remove(Channel.modelName, channel);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function unsubscribeUsersFromTopic(users, topic) {
+  users.forEach(async (user) => {
+    user.topics = user.topics.filter((aTopic) => {
+      return aTopic != topic;
+    });
+    await firebase.unsubscribeFromTopic(user, topic);
+  });
+  return users;
+}
+
 
 module.exports = router;
