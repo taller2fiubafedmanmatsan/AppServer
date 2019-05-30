@@ -425,7 +425,7 @@ describe('/api/channels', ()=> {
       user3 = await User.findOne({email: userEmail3});
     });
 
-    afterAll(async ()=> {
+    afterEach(async ()=> {
       await Channel.remove({});
     });
 
@@ -444,9 +444,6 @@ describe('/api/channels', ()=> {
 
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');
-      const updatedUser2 = await User.findById(user2._id);
-      const updatedUser3 = await User.findById(user3._id);
-
       expect(response.status).toBe(200);
 
       const usersEmails = updatedChannel.users.map((user) => {
@@ -454,8 +451,6 @@ describe('/api/channels', ()=> {
       });
       users.push(userEmail);
       expect(usersEmails).toEqual(expect.not.arrayContaining(users));
-      expect(updatedUser2.topics.length).toEqual(0);
-      expect(updatedUser3.topics.length).toEqual(0);
     });
 
     it('should let workspace admin remove user 2 and 3', async () => {
@@ -464,8 +459,6 @@ describe('/api/channels', ()=> {
 
       const updatedChannel = await Channel.findOne({name: myChannel.name})
           .populate('users', 'email');
-      const updatedUser2 = await User.findById(user2._id);
-      const updatedUser3 = await User.findById(user3._id);
 
       expect(response.status).toBe(200);
 
@@ -474,8 +467,6 @@ describe('/api/channels', ()=> {
       });
       users.push(userEmail);
       expect(usersEmails).toEqual(expect.not.arrayContaining(users));
-      expect(updatedUser2.topics.length).toEqual(0);
-      expect(updatedUser3.topics.length).toEqual(0);
     });
 
     it(`should return 403 if user doesn't belong to the channel`, async () => {
