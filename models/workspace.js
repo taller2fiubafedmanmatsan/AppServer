@@ -43,5 +43,18 @@ function validateWorkspace(workspace) {
   return Joi.validate(workspace, schema);
 };
 
+function validateWorkspaceUpdate(workspace) {
+  const schema = {
+    name: Joi.string().trim().min(1).max(250),
+    imageUrl: Joi.string().trim().uri(),
+    location: Joi.string(),
+    description: Joi.string().min(1).max(250),
+    welcomeMessage: Joi.string().min(1).max(250)
+  };
+
+  return Joi.validate(workspace, schema);
+};
+
 exports.Workspace = Workspace;
 exports.validate = validateWorkspace;
+exports.validateWorkspaceUpdate = validateWorkspaceUpdate;
