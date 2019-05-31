@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
     "test": "jest --watchAll --verbose --coverage --runInBand --detectOpenHandles",
-    "test:coveralls": "jest --coverage --coverageReporters=text-lcov --detectOpenHandles| coveralls",
+    "test:coveralls": "jest --watchAll --verbose --coverage --runInBand --detectOpenHandles| coveralls",
     "start": "node index.js",
     "debug": "node --debug-brk=30547 --no-lazy ./node_modules/jest/bin/jest.js -i"
   },
