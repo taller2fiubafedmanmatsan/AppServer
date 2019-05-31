@@ -6,4 +6,4 @@ before_script:
     - "npm i -g jasmine-node"
 script:
     - "npm run pretest"
-    - "npm run test:coveralls"
+    - npm run test:coveralls
