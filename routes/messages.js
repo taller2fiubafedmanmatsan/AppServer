@@ -10,8 +10,7 @@ const {Page, isFull} = require('../models/page');
 const {User} = require('../models/user');
 const {
   Message,
-  validateMessage,
-  validateMessageUpdate
+  validateMessage
 } = require('../models/message');
 
 
@@ -104,32 +103,6 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
 
       return response.status(200).send(resObj);
     });
-
-
-router.patch('/', auth, async (request, response) => {
-  const fields = [{user: request.user._id}, 'text'];
-  const {error} = validateMessageUpdate(_.pick(request.body, fields));
-  if (error) return response.status(400).send(error.details[0].message);
-
-  const {messageId} = request.body;
-  let message = await Message.findById(messageId);
-
-  if (!message) return response.status(404).send('Message not found');
-
-  if (request.user._id != message.user) {
-    return response.status(403).send('You are not allowed to modify'+
-                                      ' this message');
-  }
-  message = await Message.findByIdAndUpdate(messageId,
-      _.pick(request.body,
-          [
-            'text'
-          ]
-      ), {new: true});
-
-  return response.status(200).send(
-      _.pick(message, ['_id', 'text', 'dateTime', 'user']));
-});
 
 async function finishedCreationTransaction(channel, page, message) {
   transaction = new Transaction();
