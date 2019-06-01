@@ -12,6 +12,7 @@ const {
   Message,
   validateMessage
 } = require('../models/message');
+const {handleMentions} = require('../helpers/mention_helper');
 
 
 router.param('workspaceName', async (request, response, next, elementId) => {
@@ -65,7 +66,6 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         page = new Page({number: channel.pages.length, messages: [message]});
         channel.pages.push(page._id);
       } else {
-        // page = await Page.findById(page._id);
         page.messages.push(message);
       }
 
@@ -74,33 +74,15 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
       }
 
       const sender = await User.findById(request.user._id);
-      const topic = `${channel._id}`;
 
-      const fbMessage = {
-        data: {
-          msgId: message._id.toString(),
-          msg: message.text,
-          msgType: message.type,
-          createdAt: message.dateTime.toISOString(),
-          workspace: workspace.name,
-          channel: channel.name,
-          sender_id: sender._id.toString(),
-          sender_photoUrl: sender.photoUrl || '',
-          sender_name: sender.name,
-          sender_email: sender.email,
-          sender_nickname: sender.nickname || ''
-        },
-        topic: topic
-      };
-
-      await firebase.sendMessageToTopic(fbMessage);
+      // await sendMessageToTopic(sender, workspace, channel, message);
       const resObj = {
         message: _.pick(message, ['_id', 'text', 'dateTime',
           'creator', 'type']),
         name: sender.name,
         photoUrl: sender.photoUrl
       };
-
+      handleMentions(workspace, channel, message, sender);
       return response.status(200).send(resObj);
     });
 
@@ -118,6 +100,28 @@ async function finishedCreationTransaction(channel, page, message) {
     transaction.clean();
     return false;
   }
+}
+
+async function sendMessageToTopic(sender, workspace, channel, message) {
+  const topic = `${channel._id}`;
+  const fbMessage = {
+    data: {
+      msgId: message._id.toString(),
+      msg: message.text,
+      msgType: message.type,
+      createdAt: message.dateTime.toISOString(),
+      workspace: workspace.name,
+      channel: channel.name,
+      sender_id: sender._id.toString(),
+      sender_photoUrl: sender.photoUrl || '',
+      sender_name: sender.name,
+      sender_email: sender.email,
+      sender_nickname: sender.nickname || ''
+    },
+    topic: topic
+  };
+
+  await firebase.sendMessageToTopic(fbMessage);
 }
 
 module.exports = router;
