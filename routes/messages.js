@@ -75,7 +75,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
 
       const sender = await User.findById(request.user._id);
 
-      // await sendMessageToTopic(sender, workspace, channel, message);
+      await sendMessageToTopic(sender, workspace, channel, message);
       const resObj = {
         message: _.pick(message, ['_id', 'text', 'dateTime',
           'creator', 'type']),
