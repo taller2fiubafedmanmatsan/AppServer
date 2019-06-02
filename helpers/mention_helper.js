@@ -24,7 +24,7 @@ module.exports.handleMentions =
         hostname: parseUrl(user.url),
         method: 'POST',
         body: {
-          sender: sender.name,
+          sender: sender.email,
           message: message.text,
           channel: channel.name,
           workspace: workspace.name
