@@ -4,8 +4,8 @@ const {User} = require('../models/user');
 
 function parseUrl(url) {
   const protocol = 'https://';
-  const urlEnd = url.indexOf('/', protocol.length);
-  return url.substr(protocol.length, urlEnd - protocol.length);
+  // const urlEnd = url.indexOf('/', protocol.length);
+  return url.substr(protocol.length);
 };
 
 
@@ -30,6 +30,7 @@ module.exports.handleMentions =
           workspace: workspace.name
         }
       };
+      console.log(parseUrl(user.url));
       https.request(options);
     }
   };
