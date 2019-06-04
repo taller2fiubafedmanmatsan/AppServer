@@ -12,7 +12,7 @@ const {
   Message,
   validateMessage
 } = require('../models/message');
-const {handleMentions} = require('../helpers/mention_helper');
+const mentionsHandler = require('../helpers/mention_helper');
 
 
 router.param('workspaceName', async (request, response, next, elementId) => {
@@ -82,7 +82,7 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         name: sender.name,
         photoUrl: sender.photoUrl
       };
-      handleMentions(workspace, channel, message, sender);
+      await mentionsHandler.handleMentions(workspace, channel, message, sender);
       return response.status(200).send(resObj);
     });
 

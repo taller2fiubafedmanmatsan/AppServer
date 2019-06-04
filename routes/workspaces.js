@@ -411,11 +411,11 @@ async function finishedDeletionTransaction(workspace, channels, users) {
 
 async function finishedBotCreation(workspace, channels, bot) {
   transaction = new Transaction();
+  transaction.insert(User.modelName, bot);
   transaction.update(Workspace.modelName, workspace._id, workspace);
   channels.forEach((channel) => {
     transaction.insert(Channel.modelName, channel);
   });
-  transaction.insert(User.modelName, bot);
 
   try {
     await transaction.run();
