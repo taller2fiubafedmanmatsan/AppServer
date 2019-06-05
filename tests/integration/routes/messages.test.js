@@ -66,6 +66,7 @@ describe('/api/messages', ()=> {
   beforeAll(() => {
     firebase.subscribeToTopic = jest.fn();
     firebase.sendMessageToTopic = jest.fn();
+    mentionHelper.handleMentions = jest.fn();
   });
 
   afterAll(async ()=> {
@@ -105,7 +106,6 @@ describe('/api/messages', ()=> {
     };
 
     it('should return the message if the request is valid', async () => {
-      mentionHelper.handleMentions = jest.fn();
       const response = await execute(token);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(

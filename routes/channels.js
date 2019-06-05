@@ -114,7 +114,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (!await finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
-
+      await botHelper.sendWelcomeMessage(workspace, channel, users);
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
@@ -155,6 +155,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       const users = await User.find({email: {$in: request.body.users}});
       if (!users) return response.status(400).send('No users were provided.');
 
+      const workspace = request.workspace;
       let channel = request.channel;
 
       if (channel.isPrivate &&
@@ -187,7 +188,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
-
+      await botHelper.sendWelcomeMessage(workspace, channel, users);
       return response.status(200).send(_.pick(channel, fields));
     });
 
