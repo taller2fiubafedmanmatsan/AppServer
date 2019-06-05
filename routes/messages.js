@@ -104,6 +104,7 @@ async function finishedCreationTransaction(channel, page, message) {
 
 async function sendMessageToTopic(sender, workspace, channel, message) {
   const topic = `${channel._id}`;
+
   const fbMessage = {
     data: {
       msgId: message._id.toString(),
@@ -115,12 +116,12 @@ async function sendMessageToTopic(sender, workspace, channel, message) {
       sender_id: sender._id.toString(),
       sender_photoUrl: sender.photoUrl || '',
       sender_name: sender.name,
-      sender_email: sender.email,
+      sender_email: sender.email || '',
       sender_nickname: sender.nickname || ''
     },
     topic: topic
   };
-
+  console.log(fbMessage);
   await firebase.sendMessageToTopic(fbMessage);
 }
 
