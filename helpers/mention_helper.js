@@ -1,5 +1,5 @@
-const http = require('http');
 const {User} = require('../models/user');
+const botHelper = require('./bot_helper');
 
 
 function parseUrl(url) {
@@ -19,24 +19,6 @@ function parseBotCommand(message, botName) {
   return message.substr(message.indexOf(botName) + 1 + botName.length);
 }
 
-function sendRequest(hostname, path, body) {
-  const request = new http.ClientRequest({
-    hostname: hostname,
-    path: path,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(body)
-    }
-  });
-  request.end(body);
-  console.log(body);
-  request.on('response', (res) => {
-    res.on('data', (body) => {
-      console.log(body.toString());
-    });
-  });
-}
 
 async function handleMentions(workspace, channel, message, sender) {
   const atPos = message.text.indexOf('@');
@@ -56,7 +38,7 @@ async function handleMentions(workspace, channel, message, sender) {
     });
 
     const path = parsePath(user.url);
-    sendRequest(hostname, path, body);
+    botHelper.sendRequest(hostname, path, body);
   }
 };
 
