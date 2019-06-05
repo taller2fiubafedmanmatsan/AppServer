@@ -104,25 +104,41 @@ async function finishedCreationTransaction(channel, page, message) {
 
 async function sendMessageToTopic(sender, workspace, channel, message) {
   const topic = `${channel._id}`;
-  const fbMessage = {
-    data: {
-      msgId: message._id.toString(),
-      msg: message.text,
-      msgType: message.type,
-      createdAt: message.dateTime.toISOString(),
-      workspace: workspace.name,
-      channel: channel.name,
-      sender_id: sender._id.toString(),
-      sender_photoUrl: sender.photoUrl || '',
-      sender_name: sender.name,
-      sender_email: sender.email,
-      sender_nickname: sender.nickname || ''
-    },
-    topic: topic
-  };
 
-  console.log(fbMessage);
-  await firebase.sendMessageToTopic(fbMessage);
+  if (sender.url) {
+    const fbMessage = {
+      data: {
+        msgId: message._id.toString(),
+        msg: message.text,
+        msgType: message.type,
+        createdAt: message.dateTime.toISOString(),
+        workspace: workspace.name,
+        channel: channel.name,
+        sender_id: sender._id.toString(),
+        sender_name: sender.name
+      },
+      topic: topic
+    };
+    await firebase.sendMessageToTopic(fbMessage);
+  } else {
+    const fbMessage = {
+      data: {
+        msgId: message._id.toString(),
+        msg: message.text,
+        msgType: message.type,
+        createdAt: message.dateTime.toISOString(),
+        workspace: workspace.name,
+        channel: channel.name,
+        sender_id: sender._id.toString(),
+        sender_photoUrl: sender.photoUrl || '',
+        sender_name: sender.name,
+        sender_email: sender.email,
+        sender_nickname: sender.nickname || ''
+      },
+      topic: topic
+    };
+    await firebase.sendMessageToTopic(fbMessage);
+  }
 }
 
 module.exports = router;
