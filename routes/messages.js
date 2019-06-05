@@ -121,6 +121,7 @@ async function sendMessageToTopic(sender, workspace, channel, message) {
     topic: topic
   };
 
+  console.log(fbMessage);
   await firebase.sendMessageToTopic(fbMessage);
 }
 
