@@ -8,6 +8,7 @@ const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
 const {User} = require('../models/user');
+const botHelper = require('../helpers/bot_helper');
 
 const router = express.Router();
 
@@ -233,7 +234,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
       // Remove channel from workspace
       workspace.channels = workspace.channels.filter((aChannel) => {
-        return aChannel._id != channel._id;
+        return !_.isEqual(aChannel._id, channel._id);
       });
 
       let users = channel.users;
@@ -249,6 +250,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
+  await botHelper.addTitoTo(channel.users);
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
@@ -297,6 +299,7 @@ async function finishedDeletionTransaction(workspace, channel, users) {
     });
     transaction.remove(Page.modelName, aPage);
   });
+  transaction.update(Workspace.modelName, workspace._id, workspace);
   transaction.remove(Channel.modelName, channel);
 
   try {
