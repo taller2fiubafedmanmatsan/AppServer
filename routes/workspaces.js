@@ -117,7 +117,7 @@ router.post('/:wsname/bots', auth, async (request, response) => {
     return response.status(500).send(error);
   }
 
-  const token = bot.getAuthToken(true);
+  const token = bot.getAuthToken(false);
   return response.send(token).status(200);
 });
 
