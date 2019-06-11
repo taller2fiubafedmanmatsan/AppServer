@@ -70,3 +70,6 @@ async function sendWelcomeMessage(workspace, channel, users) {
 exports.sendWelcomeMessage = sendWelcomeMessage;
 exports.addTitoTo = addTitoTo;
 exports.sendRequest = sendRequest;
+exports.parseUrl = parseUrl;
+exports.parsePath = parsePath;
+exports.parseBotCommand = parseBotCommand;
