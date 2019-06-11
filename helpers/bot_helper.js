@@ -3,20 +3,16 @@ const {Message} = require('../models/message');
 const http = require('http');
 
 function parseUrl(url) {
-  const protocol = 'https://';
-  const urlEnd = url.indexOf('/', protocol.length);
-  return url.substr(protocol.length, urlEnd - protocol.length);
+  return url.split('//')[1].split('/')[0];
 };
 
 function parsePath(url) {
-  const protocol = 'https://';
-  const path = url.substr(protocol.length);
-  const slashPos = path.indexOf('/');
-  return path.substr(slashPos);
+  const domainAndPath = url.split('//')[1];
+  return domainAndPath.slice(domainAndPath.indexOf('/'));
 };
 
 function parseBotCommand(message, botName) {
-  return message.substr(message.indexOf(botName) + 1 + botName.length);
+  return message.split(botName + ' ')[1];
 }
 
 

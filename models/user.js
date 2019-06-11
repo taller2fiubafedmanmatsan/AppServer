@@ -26,8 +26,8 @@ const userSchema = mongoose.Schema({
   topics: [String]
 });
 
-userSchema.methods.getAuthToken = function(userSignUp) {
-  if (!userSignUp) return jwt.sign({_id: this._id}, config.get('jwt_key'));
+userSchema.methods.getAuthToken = function(botSignUp) {
+  if (botSignUp) return jwt.sign({_id: this._id}, config.get('jwt_key'));
   return jwt.sign({_id: this._id},
       config.get('jwt_key'),
       {expiresIn: 86400} // expires in 24 hours

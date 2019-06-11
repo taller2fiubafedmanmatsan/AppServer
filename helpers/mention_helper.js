@@ -2,10 +2,8 @@ const {User} = require('../models/user');
 const botHelper = require('./bot_helper');
 
 async function handleMentions(workspace, channel, message, sender) {
-  const atPos = message.text.indexOf('@');
-  if (atPos < 0) return;
-  const spacePos = message.text.indexOf(' ', atPos);
-  const name = message.text.substr(atPos + 1, spacePos - atPos - 1);
+  if (!message.text.includes('@')) return;
+  const name = message.text.split('@')[1].split(' ')[0];
   const user = await User.findOne({name: name});
   if (!user) return;
   if (user.url) { // El usuario es un bot si la url esta seteada

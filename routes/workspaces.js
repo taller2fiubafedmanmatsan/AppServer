@@ -116,8 +116,7 @@ router.post('/:wsname/bots', auth, async (request, response) => {
   if (!await finishedBotCreation(workspace, channels, bot)) {
     return response.status(500).send(error);
   }
-
-  const token = bot.getAuthToken(false);
+  const token = bot.getAuthToken(true);
   return response.send(token).status(200);
 });
 
