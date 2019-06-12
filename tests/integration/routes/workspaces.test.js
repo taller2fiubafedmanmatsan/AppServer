@@ -1,6 +1,8 @@
 const request = require('supertest');
 const {User} = require('../../../models/user');
 const {Workspace} = require('../../../models/workspace');
+const {Bot} = require('../../../models/bot');
+
 
 let server;
 
@@ -36,6 +38,7 @@ describe('/api/workspaces', ()=> {
 
   afterAll(async ()=> {
     await User.remove({});
+    await Bot.remove({});
     await server.close();
   });
 
@@ -873,18 +876,15 @@ describe('/api/workspaces', ()=> {
       expect(response.text).toEqual(msg);
     });
 
-    it(`should return 400 if bot name is already taken`, async () => {
-      name = 'name';
-      const response = await execute(token);
-
-      expect(response.status).toBe(400);
-      expect(response.text).toEqual('Name already taken.');
-    });
-
     it('should return 200 if request is valid', async ()=> {
       const response = await execute(token);
-
       expect(response.status).toBe(200);
+    });
+
+    it(`should return 400 if bot name is already taken`, async () => {
+      const response = await execute(token);
+      expect(response.status).toBe(400);
+      expect(response.text).toEqual('Name already taken.');
     });
   });
 });

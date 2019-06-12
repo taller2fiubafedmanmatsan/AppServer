@@ -1,6 +1,10 @@
-const {User} = require('../models/user');
+// feat-bot const {User} = require('../models/user');
 const {Message} = require('../models/message');
 const http = require('http');
+
+/* Nuevo feat-bot*/
+const {Bot} = require('../models/bot');
+
 
 function parseUrl(url) {
   return url.split('//')[1].split('/')[0];
@@ -17,7 +21,8 @@ function parseBotCommand(message, botName) {
 
 
 async function addTitoTo(users) {
-  const tito = await User.findOne({name: 'Tito'});
+  // feat-bot const tito = await User.findOne({name: 'Tito'});
+  const tito = await Bot.findOne({name: 'Tito'});
   if (tito) users.push(tito);
   return users;
 }
@@ -51,7 +56,8 @@ function sendRequest(workspace, channel, user, message, sender) {
 }
 
 async function sendWelcomeMessage(workspace, channel, users) {
-  const tito = await User.findOne({name: 'Tito'});
+  // feat-bot const tito = await User.findOne({name: 'Tito'});
+  const tito = await Bot.findOne({name: 'Tito'});
   users.forEach((user) => {
     const messageData = {
       text: '@Tito welcome',

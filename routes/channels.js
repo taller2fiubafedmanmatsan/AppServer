@@ -251,7 +251,8 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
-  await botHelper.addTitoTo(channel.users);
+  // feat-bot await botHelper.addTitoTo(channel.users);
+  await botHelper.addTitoTo(channel.bots);
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
