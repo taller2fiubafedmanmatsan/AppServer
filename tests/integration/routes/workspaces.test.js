@@ -780,4 +780,111 @@ describe('/api/workspaces', ()=> {
       expect(response.text).toEqual(msg);
     });
   });
+
+  describe('POST /', ()=> {
+    let wsName;
+    let myWorkspace;
+    let name;
+    let url;
+
+    const createWorkspace = ()=> {
+      return request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name: wsName, creator: userEmail, admins: [userEmail],
+            users: users, description: 'a',
+            welcomeMessage: 'a'
+          });
+    };
+
+    beforeEach(async ()=> {
+      wsName = 'workspaceName';
+      users = [userEmail, secondUserEmail];
+      await createWorkspace();
+      myWorkspace = await Workspace.findOne({name: wsName});
+      name = 'Bot Pepito';
+      url = 'https://bot-pepito-t2.herokuapp.com/pepito';
+    });
+
+    afterAll(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .post(`/api/workspaces/${myWorkspace.name}/bots`)
+          .set('x-auth-token', token)
+          .send({name: name, url: url});
+    };
+
+    it('should return 400 if user name is missing', async ()=> {
+      name = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user name is less than 1 characters', async ()=> {
+      name = '';
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if user name is more than 50 characters', async ()=> {
+      name = new Array(52).join('a');
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if bot url is not a valid URL', async ()=> {
+      url = 'invalidUrl';
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it(`should return 403 if user is not a moderator`, async () => {
+      const response = await execute(secondToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to add bots to ${myWorkspace.name}`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 403 if user doesn't belong to workspace`, async () => {
+      const response = await execute(thirdToken);
+
+      expect(response.status).toBe(403);
+      let msg = '';
+      msg = `You have no permissions to add bots to ${myWorkspace.name}`;
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 404 if workspace doesn't exist`, async () => {
+      myWorkspace.name = 'a';
+      const response = await execute(token);
+
+      expect(response.status).toBe(404);
+      const msg = 'Workspace not found.';
+      expect(response.text).toEqual(msg);
+    });
+
+    it(`should return 400 if bot name is already taken`, async () => {
+      name = 'name';
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+      expect(response.text).toEqual('Name already taken.');
+    });
+
+    it('should return 200 if request is valid', async ()=> {
+      const response = await execute(token);
+
+      expect(response.status).toBe(200);
+    });
+  });
 });

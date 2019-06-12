@@ -8,6 +8,7 @@ const {Workspace} = require('../models/workspace');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
 const {User} = require('../models/user');
+const botHelper = require('../helpers/bot_helper');
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     });
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl topics')
+        .populate('users', 'name nickname email photoUrl topics welcomeMessage')
         .populate('creator', 'name nickname email');
 
     if (!channel) return response.status(404).send('Invalid channel.');
@@ -64,7 +65,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
       const fields = [
         'name', 'users', 'isPrivate', 'description', 'welcomeMessage',
-        'creator', 'pages'
+        'creator', 'pages', 'channelType'
       ];
 
       const {error} = validateChannel(_.pick(request.body, fields));
@@ -114,9 +115,12 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
         return response.status(500).send(error);
       }
 
+      await botHelper.sendWelcomeMessage(workspace, channel, users);
+
       return response.status(200).send(_.pick(channel,
           [
-            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
+            'channelType'
           ]));
     });
 
@@ -154,6 +158,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       const users = await User.find({email: {$in: request.body.users}});
       if (!users) return response.status(400).send('No users were provided.');
 
+      const workspace = request.workspace;
       let channel = request.channel;
 
       if (channel.isPrivate &&
@@ -186,6 +191,8 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
+
+      await botHelper.sendWelcomeMessage(workspace, channel, users);
 
       return response.status(200).send(_.pick(channel, fields));
     });
@@ -233,7 +240,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
       // Remove channel from workspace
       workspace.channels = workspace.channels.filter((aChannel) => {
-        return aChannel._id != channel._id;
+        return !_.isEqual(aChannel._id, channel._id);
       });
 
       let users = channel.users;
@@ -249,6 +256,7 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
+  await botHelper.addTitoTo(channel.users);
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
@@ -297,6 +305,7 @@ async function finishedDeletionTransaction(workspace, channel, users) {
     });
     transaction.remove(Page.modelName, aPage);
   });
+  transaction.update(Workspace.modelName, workspace._id, workspace);
   transaction.remove(Channel.modelName, channel);
 
   try {

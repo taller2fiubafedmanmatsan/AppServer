@@ -11,7 +11,7 @@ const {Channel} = require('../models/channel');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
 
-const {User} = require('../models/user');
+const {User, validateBot} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
@@ -25,7 +25,9 @@ router.get('/:wsname', auth, async (request, response) => {
       .populate('creator', 'name email')
       .populate('admins', 'name email')
       .populate('users', 'name email')
-      .populate('channels', 'name');
+      .populate({path: 'channels', populate: {path: 'users', select: 'email'},
+        select: ['users', 'name', 'channelType']});
+
   if (!workspace) return response.status(404).send('Workspace not found.');
 
   response.status(200).send(_.pick(workspace, [
@@ -79,6 +81,46 @@ router.post('/', [auth, usersExist], async (request, response) => {
     'name', 'imageUrl', 'location', 'creator', 'description',
     'welcomeMessage', 'channels', 'users', 'admins'
   ]));
+});
+
+router.post('/:wsname/bots', auth, async (request, response) => {
+  const {error} = validateBot(request.body);
+  if (error) return response.status(400).send(error.details[0].message);
+
+  const workspace = await Workspace.findOne({name: request.params.wsname})
+      .populate('users').
+      populate('channels');
+
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+    const msg = `You have no permissions to add bots to ${workspace.name}`;
+    return response.status(403).send(msg);
+  }
+
+  const {name} = request.body;
+  let bot = await User.findOne({name: name});
+  if (bot) return response.status(400).send('Name already taken.');
+
+  request.body.workspaces = [workspace._id];
+  bot = new User(_.pick(request.body,
+      [
+        'name', 'url', 'workspaces'
+      ]
+  ));
+
+  workspace.users.push(bot);
+  const channels = workspace.channels;
+  channels.forEach((channel)=> {
+    channel.users.push(bot);
+  });
+
+  if (!await finishedBotCreation(workspace, channels, bot)) {
+    return response.status(500).send(error);
+  }
+
+  const token = bot.getAuthToken(false);
+  return response.send(token).status(200);
 });
 
 router.patch('/:wsname', auth, async (request, response) => {
@@ -357,6 +399,25 @@ async function finishedDeletionTransaction(workspace, channels, users) {
   });
 
   transaction.remove(Workspace.modelName, workspace);
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
+
+async function finishedBotCreation(workspace, channels, bot) {
+  transaction = new Transaction();
+  transaction.insert(User.modelName, bot);
+  transaction.update(Workspace.modelName, workspace._id, workspace);
+  channels.forEach((channel) => {
+    transaction.insert(Channel.modelName, channel);
+  });
 
   try {
     await transaction.run();

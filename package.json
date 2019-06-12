@@ -6,7 +6,6 @@
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
     "test": "jest --watchAll --verbose --coverage --runInBand --detectOpenHandles",
-    "test:coveralls": "jest --coverage --detectOpenHandles --forceExit --coverageReporters=text-lcov | coveralls",
     "start": "node index.js",
     "debug": "node --debug-brk=30547 --no-lazy ./node_modules/jest/bin/jest.js -i"
   },
@@ -19,12 +18,12 @@
   "dependencies": {
     "bcrypt": "^3.0.5",
     "config": "^3.0.1",
-    "coveralls": "^3.0.3",
     "debug": "^4.1.1",
     "express": "^4.16.4",
     "express-async-errors": "^3.1.1",
     "fawn": "^2.1.5",
     "firebase-admin": "^7.3.0",
+    "https": "^1.0.0",
     "joi": "9.0.0-0",
     "joi-objectid": "^2.0.0",
     "jsonwebtoken": "^8.5.1",

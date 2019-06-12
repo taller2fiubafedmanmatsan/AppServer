@@ -5,6 +5,7 @@ const {Channel} = require('../../../models/channel');
 const {Page} = require('../../../models/page');
 const {Message} = require('../../../models/message');
 const firebase = require('../../../helpers/firebase_helper');
+const mentionHelper = require('../../../helpers/mention_helper');
 
 let server;
 
@@ -44,7 +45,8 @@ describe('/api/messages', ()=> {
         .set('x-auth-token', token)
         .send({
           name: 'channelName', creator: userEmail, users: [userEmail],
-          isPrivate: true, description: 'a', welcomeMessage: 'a'
+          isPrivate: true, description: 'a', welcomeMessage: 'a',
+          channelType: 'group'
         });
   };
 
@@ -65,6 +67,7 @@ describe('/api/messages', ()=> {
   beforeAll(() => {
     firebase.subscribeToTopic = jest.fn();
     firebase.sendMessageToTopic = jest.fn();
+    mentionHelper.handleMentions = jest.fn();
   });
 
   afterAll(async ()=> {
@@ -75,13 +78,6 @@ describe('/api/messages', ()=> {
     await Message.remove({});
     await server.close();
   });
-
-  // afterEach(async ()=> {
-  //   await Channel.remove({});
-  //   workspace = await Workspace.findByIdAndUpdate(workspace._id,
-  //       {channels: []},
-  //       {new: true});
-  // });
 
   describe('POST /workspace/:workspaceName/channel/:channelName', () => {
     let creator;
@@ -112,18 +108,13 @@ describe('/api/messages', ()=> {
 
     it('should return the message if the request is valid', async () => {
       const response = await execute(token);
-
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
             'message', 'name', 'photoUrl'
           ])
       );
-      /* expect(Object.keys(response.body)).toEqual(
-          expect.arrayContaining([
-            '_id', 'text', 'creator', 'dateTime', 'type'
-          ])
-      );*/
+      expect(mentionHelper.handleMentions).toHaveBeenCalled();
     });
 
     it('should return 400 if text is less than 1 characters', async ()=> {
