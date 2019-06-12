@@ -7,6 +7,8 @@ services:
       - "27017:27017"
     expose:
       - "27017"
+    networks:
+      - hypechat-net
     volumes:
       - ./data/db:/data/db
     command: mongod --smallfiles --logpath=/dev/null
@@ -16,8 +18,8 @@ services:
     build: .
     depends_on:
       - mongo
-    links:
-      - mongo
+    networks:
+      - hypechat-net
     ports:
       - "3000:3000"
     expose:
@@ -25,3 +27,7 @@ services:
     environment:
         - db=mongodb://mongo:27017/hypechat-test
     command: bash -c "node index.js"
+
+networks:
+  hypechat-net:
+    driver: bridge
