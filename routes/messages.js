@@ -14,6 +14,9 @@ const {
 } = require('../models/message');
 const mentionsHandler = require('../helpers/mention_helper');
 
+/* Nuevo feature bot*/
+const {Bot} = require('../models/bot');
+
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
@@ -39,6 +42,51 @@ router.param('workspaceName', async (request, response, next, elementId) => {
   request.workspace = workspace;
   next();
 });
+
+
+router.post('/workspace/:workspaceName/channel/:channelName/bot', auth,
+    async (request, response) => {
+      const fields = ['creator', 'text', 'type'];
+      const {error} = validateMessage(_.pick(request.body, fields));
+      if (error) return response.status(400).send(error.details[0].message);
+
+      const workspace = request.workspace;
+      const channel = request.channel;
+      if (!request.channel.bots.some((user) => user._id == request.user._id)) {
+        return response.status(403)
+            .send(`The user doesn't belong to the channel`);
+      }
+      const messageData = {
+        text: request.body.text,
+        creator: request.user._id,
+        type: request.body.type
+      };
+      const message = new Message(_.pick(messageData, fields));
+
+      let page = channel.pages[channel.pages.length - 1];
+      if (!page || isFull(page)) {
+        page = new Page({number: channel.pages.length, messages: [message]});
+        channel.pages.push(page._id);
+      } else {
+        page.messages.push(message);
+      }
+
+      if (!finishedCreationTransaction(channel, page, message)) {
+        return response.status(500).send('Transaction could not be completed');
+      }
+
+      const sender = await Bot.findById(request.user._id);
+
+      // await sendMessageToTopic(sender, workspace, channel, message);
+      const resObj = {
+        message: _.pick(message, ['_id', 'text', 'dateTime',
+          'creator', 'type']),
+        name: sender.name
+      };
+      await mentionsHandler.handleMentions(workspace, channel, message, sender);
+      return response.status(200).send(resObj);
+    });
+
 
 router.post('/workspace/:workspaceName/channel/:channelName', auth,
     async (request, response) => {
@@ -73,14 +121,14 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         return response.status(500).send('Transaction could not be completed');
       }
 
-      const sender = await User.findById(request.user._id);
+      const sender = await User.findById(request.user._id); // Distinta
 
       await sendMessageToTopic(sender, workspace, channel, message);
       const resObj = {
         message: _.pick(message, ['_id', 'text', 'dateTime',
           'creator', 'type']),
         name: sender.name,
-        photoUrl: sender.photoUrl
+        photoUrl: sender.photoUrl // Distinta
       };
       await mentionsHandler.handleMentions(workspace, channel, message, sender);
       return response.status(200).send(resObj);
