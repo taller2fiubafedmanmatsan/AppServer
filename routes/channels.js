@@ -32,7 +32,8 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
         .populate('users', 'name nickname email photoUrl topics welcomeMessage')
-        .populate('creator', 'name nickname email');
+        .populate('creator', 'name nickname email')
+        .populate('bots', 'name');
 
     if (!channel) return response.status(404).send('Invalid channel.');
 
@@ -45,7 +46,9 @@ router.param('workspaceName', async (request, response, next, elementId) => {
 
 router.get('/:channelName/workspace/:workspaceName', auth,
     async (request, response) => {
-      if (!request.channel.users.some((user) => user._id == request.user._id)) {
+      if (!(request.channel.users.some((user) => user._id == request.user._id))
+          && !(request.channel.bots.some((bot) => bot._id == request.user._id)))
+      {
         const msg = 'The user cannot see messages from this channel';
         return response.status(403).send(msg);
       }
