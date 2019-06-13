@@ -53,7 +53,11 @@ router.get('/:channelName/workspace/:workspaceName', auth,
         return response.status(403).send(msg);
       }
 
-      response.status(200).send(request.channel);
+      response.status(200).send(_.pick(request.channel,
+          [
+            '_id', 'name', 'pages', 'users', 'creator', 'welcomeMessage',
+            'description', 'isPrivate'
+          ]));
     });
 
 router.get('/workspace/:workspaceName', auth, async (request, response) => {
