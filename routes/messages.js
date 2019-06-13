@@ -91,6 +91,10 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
           sender_email: sender.email,
           sender_nickname: sender.nickname || ''
         },
+        notification: {
+          title: channel.name,
+          body: sender.nickname + ': ' + message.text
+        },
         topic: topic
       };
 
