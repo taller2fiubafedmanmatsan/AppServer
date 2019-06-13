@@ -48,6 +48,7 @@ function sendRequest(workspace, channel, user, message, sender) {
     }
   });
   request.end(body);
+  console.log(body);
   request.on('response', (res) => {
     res.on('data', (body) => {
       console.log(body.toString());
