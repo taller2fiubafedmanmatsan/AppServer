@@ -64,7 +64,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
       const fields = [
         'name', 'users', 'isPrivate', 'description', 'welcomeMessage',
-        'creator', 'pages'
+        'creator', 'pages', 'channelType'
       ];
 
       const {error} = validateChannel(_.pick(request.body, fields));
@@ -116,7 +116,8 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
 
       return response.status(200).send(_.pick(channel,
           [
-            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
+            'channelType'
           ]));
     });
 
