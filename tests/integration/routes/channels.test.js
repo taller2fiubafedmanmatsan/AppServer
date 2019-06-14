@@ -158,6 +158,8 @@ describe('/api/channels', ()=> {
             'channelType'
           ])
       );
+      expect(botHelper.addTitoTo).toHaveBeenCalled();
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
     it('should return 400 if name is missing', async ()=> {

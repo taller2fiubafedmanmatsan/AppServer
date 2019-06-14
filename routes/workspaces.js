@@ -11,12 +11,16 @@ const {Channel} = require('../models/channel');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
 
-const {User, validateBot} = require('../models/user');
+// feat-bot const {User, validateBot} = require('../models/user');
+const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
 const router = express.Router();
 const firebase = require('../helpers/firebase_helper');
+
+/* Nuevo feature-bots*/
+const {Bot, validateBot} = require('../models/bot');
 
 Fawn.init(mongoose);
 
@@ -99,27 +103,30 @@ router.post('/:wsname/bots', auth, async (request, response) => {
   }
 
   const {name} = request.body;
-  let bot = await User.findOne({name: name});
+  // feat-bot let bot = await User.findOne({name: name});
+  let bot = await Bot.findOne({name: name});
   if (bot) return response.status(400).send('Name already taken.');
 
   request.body.workspaces = [workspace._id];
-  bot = new User(_.pick(request.body,
+  // feat-bot bot = new User(_.pick(request.body,
+  bot = new Bot(_.pick(request.body,
       [
         'name', 'url', 'workspaces'
       ]
   ));
 
-  workspace.users.push(bot);
+  // feat-bot workspace.users.push(bot);
+  workspace.bots.push(bot);
   const channels = workspace.channels;
   channels.forEach((channel)=> {
-    channel.users.push(bot);
+    // feat-bot channel.users.push(bot);
+    channels.bots.push(bot);
   });
 
   if (!await finishedBotCreation(workspace, channels, bot)) {
     return response.status(500).send(error);
   }
-
-  const token = bot.getAuthToken(false);
+  const token = bot.getAuthToken();
   return response.send(token).status(200);
 });
 
@@ -322,7 +329,8 @@ router.delete('/:wsname', [auth],
     async (request, response) => {
       const workspace = await Workspace.findOne({name: request.params.wsname})
           .populate({path: 'channels', populate: {path: 'pages'}})
-          .populate('users', '-__v');
+          .populate('users', '-__v')
+          .populate('bots', 'workspaces');
 
       if (!workspace) return response.status(404).send('Invalid workspace.');
 
@@ -332,13 +340,17 @@ router.delete('/:wsname', [auth],
       }
 
       const users = workspace.users;
+      const bots = workspace.bots; // feat-bot nuevo
       const channels = workspace.channels;
 
       users.forEach(async (user) => {
         await unsubscribeFromChannels(user, channels);
       });
 
-      if (!await finishedDeletionTransaction(workspace, channels, users)) {
+      /* feat-bot if (!await finishedDeletionTransaction(workspace,
+       channels, users)) {*/
+      if (!await finishedDeletionTransaction(workspace, channels,
+          users, bots)) {
         return response.status(500).send(error);
       }
       const resMsg = `Deleted ${workspace.name} successfully`;
@@ -379,13 +391,21 @@ async function finishedUsersUpdateTransaction(workspace, users) {
   }
 }
 
-async function finishedDeletionTransaction(workspace, channels, users) {
+/* feat-bot async function finishedDeletionTransaction(workspace,
+    channels, users) {*/
+async function finishedDeletionTransaction(workspace, channels, users, bots) {
   transaction = new Transaction();
   users.forEach((user) => {
     user.workspaces = user.workspaces.filter((aWorkspace) => {
       return !_.isEqual(aWorkspace._id, workspace._id);
     });
     transaction.insert(User.modelName, user);
+  });
+  bots.forEach((bot) => {
+    bot.workspaces = bot.workspaces.filter((aWorkspace) => {
+      return !_.isEqual(aWorkspace._id, workspace._id);
+    });
+    transaction.insert(Bot.modelName, bot);
   });
 
   channels.forEach((channel) => {
@@ -413,7 +433,8 @@ async function finishedDeletionTransaction(workspace, channels, users) {
 
 async function finishedBotCreation(workspace, channels, bot) {
   transaction = new Transaction();
-  transaction.insert(User.modelName, bot);
+  // feat-bot transaction.insert(User.modelName, bot);
+  transaction.insert(Bot.modelName, bot);
   transaction.update(Workspace.modelName, workspace._id, workspace);
   channels.forEach((channel) => {
     transaction.insert(Channel.modelName, channel);

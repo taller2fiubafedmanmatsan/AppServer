@@ -32,7 +32,8 @@ router.param('workspaceName', async (request, response, next, elementId) => {
     const channel = await Channel.findById(chId)
         .populate('pages', '-__v')
         .populate('users', 'name nickname email photoUrl topics welcomeMessage')
-        .populate('creator', 'name nickname email');
+        .populate('creator', 'name nickname email')
+        .populate('bots', 'name');
 
     if (!channel) return response.status(404).send('Invalid channel.');
 
@@ -45,12 +46,18 @@ router.param('workspaceName', async (request, response, next, elementId) => {
 
 router.get('/:channelName/workspace/:workspaceName', auth,
     async (request, response) => {
-      if (!request.channel.users.some((user) => user._id == request.user._id)) {
+      if (!(request.channel.users.some((user) => user._id == request.user._id))
+          && !(request.channel.bots.some((bot) => bot._id == request.user._id)))
+      {
         const msg = 'The user cannot see messages from this channel';
         return response.status(403).send(msg);
       }
 
-      response.status(200).send(request.channel);
+      response.status(200).send(_.pick(request.channel,
+          [
+            '_id', 'name', 'pages', 'users', 'creator', 'welcomeMessage',
+            'description', 'isPrivate'
+          ]));
     });
 
 router.get('/workspace/:workspaceName', auth, async (request, response) => {
@@ -114,9 +121,7 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       if (!await finishedCreationTransaction(workspace, channel, page, users)) {
         return response.status(500).send(error);
       }
-
       await botHelper.sendWelcomeMessage(workspace, channel, users);
-
       return response.status(200).send(_.pick(channel,
           [
             '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
@@ -191,9 +196,7 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
           console.log(`user: ${users.name} in topics: ${users.topics}`);
         };
       }
-
       await botHelper.sendWelcomeMessage(workspace, channel, users);
-
       return response.status(200).send(_.pick(channel, fields));
     });
 
@@ -256,7 +259,8 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
 
 async function finishedCreationTransaction(workspace, channel, page, users) {
   transaction = new Transaction();
-  await botHelper.addTitoTo(channel.users);
+  // feat-bot await botHelper.addTitoTo(channel.users);
+  await botHelper.addTitoTo(channel.bots);
   transaction.insert(Channel.modelName, channel);
   transaction.insert(Page.modelName, page);
   transaction.update(Workspace.modelName, workspace._id, workspace);
