@@ -168,10 +168,6 @@ async function sendMessageToTopic(sender, workspace, channel, message) {
       sender_nickname: sender.nickname || '',
       channelType: channel.channelType
     },
-    notification: {
-      title: channel.name,
-      body: sender.nickname + ': ' + message.text
-    },
     topic: topic
   };
   await firebase.sendMessageToTopic(fbMessage);
