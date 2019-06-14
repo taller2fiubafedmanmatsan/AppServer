@@ -165,7 +165,8 @@ async function sendMessageToTopic(sender, workspace, channel, message) {
       sender_photoUrl: sender.photoUrl || '',
       sender_name: sender.name,
       sender_email: sender.email || '',
-      sender_nickname: sender.nickname || ''
+      sender_nickname: sender.nickname || '',
+      channelType: channel.channelType
     },
     notification: {
       title: channel.name,
