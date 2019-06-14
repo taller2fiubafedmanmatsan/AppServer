@@ -5,8 +5,7 @@ const {Bot} = require('../models/bot');
 async function handleMentions(workspace, channel, message, sender) {
   if (!message.text.includes('@')) return;
   const name = message.text.split('@')[1].split(' ')[0];
-  /* feat-bot const user = await User.findOne({name: name});
-  if (!user) return;*/
+
   let user = await User.findOne({name: name});
   if (!user) user = await Bot.findOne({name: name});
   if (!user) return;

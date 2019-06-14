@@ -10,16 +10,12 @@ const {
 const {Channel} = require('../models/channel');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
-
-// feat-bot const {User, validateBot} = require('../models/user');
 const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
 const router = express.Router();
 const firebase = require('../helpers/firebase_helper');
-
-/* Nuevo feature-bots*/
 const {Bot, validateBot} = require('../models/bot');
 
 Fawn.init(mongoose);
@@ -101,23 +97,19 @@ router.post('/:wsname/bots', auth, async (request, response) => {
   }
 
   const {name} = request.body;
-  // feat-bot let bot = await User.findOne({name: name});
   let bot = await Bot.findOne({name: name});
   if (bot) return response.status(400).send('Name already taken.');
 
   request.body.workspaces = [workspace._id];
-  // feat-bot bot = new User(_.pick(request.body,
   bot = new Bot(_.pick(request.body,
       [
         'name', 'url', 'workspaces'
       ]
   ));
 
-  // feat-bot workspace.users.push(bot);
   workspace.bots.push(bot);
   const channels = workspace.channels;
   channels.forEach((channel)=> {
-    // feat-bot channel.users.push(bot);
     channels.bots.push(bot);
   });
 
@@ -338,15 +330,13 @@ router.delete('/:wsname', [auth],
       }
 
       const users = workspace.users;
-      const bots = workspace.bots; // feat-bot nuevo
+      const bots = workspace.bots;
       const channels = workspace.channels;
 
       users.forEach(async (user) => {
         await unsubscribeFromChannels(user, channels);
       });
 
-      /* feat-bot if (!await finishedDeletionTransaction(workspace,
-       channels, users)) {*/
       if (!await finishedDeletionTransaction(workspace, channels,
           users, bots)) {
         return response.status(500).send(error);
@@ -389,8 +379,6 @@ async function finishedUsersUpdateTransaction(workspace, users) {
   }
 }
 
-/* feat-bot async function finishedDeletionTransaction(workspace,
-    channels, users) {*/
 async function finishedDeletionTransaction(workspace, channels, users, bots) {
   transaction = new Transaction();
   users.forEach((user) => {
@@ -431,7 +419,6 @@ async function finishedDeletionTransaction(workspace, channels, users, bots) {
 
 async function finishedBotCreation(workspace, channels, bot) {
   transaction = new Transaction();
-  // feat-bot transaction.insert(User.modelName, bot);
   transaction.insert(Bot.modelName, bot);
   transaction.update(Workspace.modelName, workspace._id, workspace);
   channels.forEach((channel) => {
