@@ -48,7 +48,8 @@ describe('/api/messages', ()=> {
         .set('x-auth-token', token)
         .send({
           name: 'channelName', creator: userEmail, users: [userEmail],
-          isPrivate: true, description: 'a', welcomeMessage: 'a'
+          isPrivate: true, description: 'a', welcomeMessage: 'a',
+          channelType: 'group'
         });
   };
 

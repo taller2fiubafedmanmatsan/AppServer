@@ -14,7 +14,8 @@ function selectUser(users, email) {
 function transformRequest(users, req) {
   const validChannel = _.pick(req.body,
       [
-        'name', 'description', 'isPrivate', 'welcomeMessage'
+        'name', 'description', 'isPrivate', 'welcomeMessage',
+        'channelType'
       ]
   );
 
