@@ -16,6 +16,7 @@ const userSchema = mongoose.Schema({
   password: {type: String, minlenght: 6, maxlenght: 255, require: true},
   isAdmin: Boolean,
   photoUrl: String,
+  url: String,
   facebook_log: {type: Boolean, require: true},
   workspaces: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -25,7 +26,8 @@ const userSchema = mongoose.Schema({
   topics: [String]
 });
 
-userSchema.methods.getAuthToken = function() {
+userSchema.methods.getAuthToken = function(userSignUp) {
+  if (!userSignUp) return jwt.sign({_id: this._id}, config.get('jwt_key'));
   return jwt.sign({_id: this._id},
       config.get('jwt_key'),
       {expiresIn: 86400} // expires in 24 hours
@@ -48,6 +50,15 @@ function validateUser(user) {
   return Joi.validate(user, schema);
 };
 
+function validateBot(bot) {
+  const schema = {
+    name: Joi.string().min(1).max(50).required(),
+    url: Joi.string().trim().uri().required()
+  };
+
+  return Joi.validate(bot, schema);
+};
+
 function validateUpdate(requestBody) {
   const schema = {
     nickname: Joi.string().min(1).max(50).trim(),
@@ -67,5 +78,6 @@ function validatePasswordRestore(requestBody) {
 
 exports.User = User;
 exports.validate = validateUser;
+exports.validateBot = validateBot;
 exports.validateUpdate = validateUpdate;
 exports.validatePasswordRestore = validatePasswordRestore;

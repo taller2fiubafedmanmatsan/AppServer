@@ -17,9 +17,14 @@ const channelSchema = mongoose.Schema({
     ref: 'User',
     require: true
   },
+  bots: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Bot'
+  }],
   isPrivate: {type: Boolean, default: false},
   description: {type: String, minlength: 1, maxlenght: 250},
-  welcomeMessage: {type: String, minlength: 1, maxlenght: 250}
+  welcomeMessage: {type: String, minlength: 1, maxlenght: 250},
+  channelType: {type: String, minlength: 1, maxlenght: 250}
 });
 
 const Channel = mongoose.model('Channel', channelSchema);
@@ -32,7 +37,8 @@ function validateChannel(channel) {
     creator: Joi.string().trim().email(),
     isPrivate: Joi.boolean(),
     description: Joi.string().min(1).max(250),
-    welcomeMessage: Joi.string().min(1).max(250)
+    welcomeMessage: Joi.string().min(1).max(250),
+    channelType: Joi.string().min(1).max(250).required()
   };
   return Joi.validate(channel, schema);
 };

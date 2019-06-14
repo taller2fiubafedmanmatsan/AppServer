@@ -4,6 +4,7 @@ const {Workspace} = require('../../../models/workspace');
 const {Channel} = require('../../../models/channel');
 const {Page} = require('../../../models/page');
 const firebase = require('../../../helpers/firebase_helper');
+const botHelper = require('../../../helpers/bot_helper');
 
 let server;
 
@@ -64,6 +65,8 @@ describe('/api/channels', ()=> {
     firebase.subscribeToTopic = jest.fn();
     firebase.sendMessageToTopic = jest.fn();
     firebase.unsubscribeFromTopic = jest.fn();
+    botHelper.addTitoTo = jest.fn();
+    botHelper.sendWelcomeMessage = jest.fn();
   });
 
   afterAll(async ()=> {
@@ -88,6 +91,7 @@ describe('/api/channels', ()=> {
     let isPrivate;
     let description;
     let welcomeMessage;
+    let channelType;
 
     beforeEach(async ()=> {
       name = 'channelName';
@@ -97,6 +101,7 @@ describe('/api/channels', ()=> {
       description = 'a';
       welcomeMessage = 'a';
       workspaceName = workspace.name;
+      channelType = 'group';
     });
 
     afterEach(async ()=> {
@@ -112,19 +117,21 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
     it('should return new channel if request is valid', async ()=> {
       const response = await execute(token);
-
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
+            'channelType'
           ])
       );
+      expect(botHelper.addTitoTo).toHaveBeenCalled();
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
     it('should return 200 if user member creates a channel', async ()=> {
@@ -133,9 +140,26 @@ describe('/api/channels', ()=> {
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
-            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
+            'channelType'
           ])
       );
+      expect(botHelper.addTitoTo).toHaveBeenCalled();
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
+    });
+
+    it('should return 200 if user member creates a channel', async ()=> {
+      const response = await execute(memberToken);
+
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate',
+            'channelType'
+          ])
+      );
+      expect(botHelper.addTitoTo).toHaveBeenCalled();
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
     it('should return 400 if name is missing', async ()=> {
@@ -190,6 +214,27 @@ describe('/api/channels', ()=> {
       expect(response.text).toEqual('The user cannot create channels' +
                                         ' in this workspace');
     });
+
+    it('should return 400 if type is missing', async ()=> {
+      channelType = null;
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if type is less than 1 character', async ()=> {
+      channelType = '';
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 if type is more than 250 character', async ()=> {
+      channelType = new Array(252).join('a');
+      const response = await execute(token);
+
+      expect(response.status).toBe(400);
+    });
   });
 
 
@@ -201,6 +246,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
 
     const createChannel = ()=> {
       return request(server)
@@ -208,7 +254,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -220,6 +266,7 @@ describe('/api/channels', ()=> {
       description = 'a';
       welcomeMessage = 'a';
       workspaceName = workspace.name;
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName'});
     });
@@ -263,6 +310,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
 
     const createChannel = ()=> {
       return request(server)
@@ -270,7 +318,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -282,6 +330,7 @@ describe('/api/channels', ()=> {
       description = 'a2';
       welcomeMessage = 'a2';
       workspaceName = workspace.name;
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName2'});
     });
@@ -309,6 +358,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
     const userEmail2 = 'user2@test.com';
     const userEmail3 = 'user3@test.com';
     let user2;
@@ -320,7 +370,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -332,6 +382,7 @@ describe('/api/channels', ()=> {
       description = 'a';
       welcomeMessage = 'a';
       workspaceName = workspace.name;
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName'});
       await createUser(userEmail2);
@@ -366,6 +417,7 @@ describe('/api/channels', ()=> {
       });
       users.push(userEmail);
       expect(usersEmails).toEqual(expect.arrayContaining(users));
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
     it(`should return 403 if user doesn't belong to the channel`, async () => {
@@ -394,6 +446,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
     const userEmail2 = 'user2@test.com';
     const userEmail3 = 'user3@test.com';
     let user2;
@@ -405,7 +458,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -417,6 +470,7 @@ describe('/api/channels', ()=> {
       description = 'a';
       welcomeMessage = 'a';
       workspaceName = workspace.name;
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName'});
       await createUser(userEmail2);
@@ -495,6 +549,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
 
     const createChannel = ()=> {
       return request(server)
@@ -502,7 +557,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -513,6 +568,7 @@ describe('/api/channels', ()=> {
       isPrivate = true;
       description = 'a';
       welcomeMessage = 'a';
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName'});
     });
@@ -645,6 +701,7 @@ describe('/api/channels', ()=> {
     let description;
     let welcomeMessage;
     let myChannel;
+    let channelType;
 
     const createChannel = ()=> {
       return request(server)
@@ -652,7 +709,7 @@ describe('/api/channels', ()=> {
           .set('x-auth-token', token)
           .send({
             name, creator, users, isPrivate,
-            description, welcomeMessage
+            description, welcomeMessage, channelType
           });
     };
 
@@ -663,6 +720,7 @@ describe('/api/channels', ()=> {
       isPrivate = true;
       description = 'a';
       welcomeMessage = 'a';
+      channelType = 'group';
       await createChannel();
       myChannel = await Channel.findOne({name: 'channelName'});
     });
