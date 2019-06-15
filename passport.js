@@ -12,8 +12,8 @@ module.exports = function(passport) {
   });
 
   passport.use('facebookToken', new FacebookStrategy({
-    clientID: '455315281701166', // config.facebook.id,
-    clientSecret: 'e156a7678ffb72709187aed027e8bf76' // config.facebook.secret
+    clientID: config.facebook.id,
+    clientSecret: config.facebook.secret
   }, async (accessToken, refreshToken, profile, done) => {
     const existingUser = await User.findOne({email: profile.emails[0].value});
     if (existingUser) {
@@ -25,7 +25,6 @@ module.exports = function(passport) {
       nickname: profile.displayName,
       photoUrl: profile.photos[0].value
     });
-    console.log(config.facebook.secret);
     await newUser.save();
     done(null, newUser);
   }));
