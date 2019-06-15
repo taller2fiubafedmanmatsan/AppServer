@@ -12,5 +12,9 @@
   "fireb_token_uri": "fireb_token_uri",
   "fireb_auth_provider": "fireb_auth_provider",
   "fireb_client_url": "fireb_client_url",
-  "firebase_database": "firebase_database"
+  "firebase_database": "firebase_database",
+  "facebook": {
+     "id": "facebook_client_id",
+     "secret": "facebook_client_secret"
+   }
 }
