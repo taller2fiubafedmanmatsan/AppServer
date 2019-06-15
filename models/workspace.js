@@ -22,6 +22,10 @@ const workspaceSchema = mongoose.Schema({
   admins: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  }],
+  bots: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Bot'
   }]
 });
 

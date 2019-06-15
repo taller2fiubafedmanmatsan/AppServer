@@ -17,6 +17,10 @@ const channelSchema = mongoose.Schema({
     ref: 'User',
     require: true
   },
+  bots: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Bot'
+  }],
   isPrivate: {type: Boolean, default: false},
   description: {type: String, minlength: 1, maxlenght: 250},
   welcomeMessage: {type: String, minlength: 1, maxlenght: 250}

@@ -24,14 +24,6 @@ function validateMessage(message) {
   return Joi.validate(message, schema);
 };
 
-function validateMessageUpdate(message) {
-  const schema = {
-    text: Joi.string().min(1)
-  };
-  return Joi.validate(message, schema);
-};
-
 exports.Message = Message;
 exports.validateMessage = validateMessage;
-exports.validateMessageUpdate = validateMessageUpdate;
 exports.messageSchema = messageSchema;
