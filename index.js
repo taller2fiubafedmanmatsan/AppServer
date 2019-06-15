@@ -6,6 +6,7 @@ require('./startup/logging')();
 require('./startup/config')();
 require('./startup/db')();
 require('./startup/firebase')();
+require('./startup/passport')(app);
 require('./startup/routes')(app);
 
 const port = process.env.PORT || 3000;
