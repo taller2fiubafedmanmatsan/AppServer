@@ -51,6 +51,50 @@ describe('/api/workspaces', ()=> {
     await server.close();
   });
 
+
+  describe('GET /', () => {
+    const name = 'WSname';
+    const creator = userEmail;
+    const users = [userEmail];
+    const admins = [userEmail];
+    const description = 'a';
+    const welcomeMessage = 'a';
+
+    beforeAll(async ()=> {
+      await request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, admins,
+            description, welcomeMessage
+          });
+    });
+
+    afterAll(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .get('/api/workspaces/')
+          .set('x-auth-token', token);
+    };
+
+    it('should return every workspace', async () => {
+      const response = await execute(adminToken);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 401 if non-admin user make the request', async () => {
+      const response = await execute(token);
+
+      expect(response.status).toBe(401);
+      const msg = 'You have no permissions to perform this action.';
+      expect(response.text).toEqual(msg);
+    });
+  });
+
   describe('GET /:wsname', () => {
     const name = 'WSname';
     const creator = userEmail;

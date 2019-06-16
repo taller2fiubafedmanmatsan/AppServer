@@ -20,6 +20,22 @@ const {Bot, validateBot} = require('../models/bot');
 
 Fawn.init(mongoose);
 
+router.get('/', auth, async (request, response) => {
+  const user = await User.findById(request.user._id);
+  if (!user.isAdmin) {
+    const msg = `You have no permissions to perform this action.`;
+    return response.status(401).send(msg);
+  }
+
+  const workspaces = await Workspace.find({})
+      .populate('creator', '_id name email')
+      .populate('admins', '_id name email')
+      .populate('users', '_id name email')
+      .populate({path: 'channels', populate: {path: 'pages'}})
+      .select('-__v');
+  response.status(200).send(workspaces);
+});
+
 router.get('/:wsname', auth, async (request, response) => {
   const workspace = await Workspace.findOne({name: request.params.wsname})
       .populate('creator', 'name email')
