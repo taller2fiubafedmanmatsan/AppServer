@@ -46,8 +46,10 @@ router.param('workspaceName', async (request, response, next, elementId) => {
 
 router.get('/:channelName/workspace/:workspaceName', auth,
     async (request, response) => {
+      const user = await User.findById(request.user._id);
       if (!(request.channel.users.some((user) => user._id == request.user._id))
-          && !(request.channel.bots.some((bot) => bot._id == request.user._id)))
+          && !(request.channel.bots.some((bot) => bot._id == request.user._id))
+          && !(user.isAdmin))
       {
         const msg = 'The user cannot see messages from this channel';
         return response.status(403).send(msg);
@@ -78,8 +80,10 @@ router.post('/workspace/:workspaceName', [auth, channelTransform],
       const {error} = validateChannel(_.pick(request.body, fields));
       if (error) return response.status(400).send(error.details[0].message);
 
+      const user = await User.findById(request.user._id);
       const workspace = request.workspace;
-      if (!workspace.users.some((userId) => userId == request.user._id)) {
+      if (!workspace.users.some((userId) => userId == request.user._id)
+          && !(user.isAdmin)) {
         const msg = 'The user cannot create channels in this workspace';
         return response.status(403).send(msg);
       }
@@ -139,8 +143,9 @@ router.patch('/:channelName/workspace/:workspaceName', auth,
       const workspace = request.workspace;
       let channel = request.channel;
 
+      const user = await User.findById(request.user._id);
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id)) {
+          (channel.creator != request.user._id) && !(user.isAdmin)) {
         const msg = `You cannot modify ${channel.name} channel`;
         return response.status(403).send(msg);
       }
@@ -166,8 +171,10 @@ router.patch('/:channelName/workspace/:workspaceName/addUsers', auth,
       const workspace = request.workspace;
       let channel = request.channel;
 
+      const user = await User.findById(request.user._id);
       if (channel.isPrivate &&
-        !channel.users.some((user) => user._id == request.user._id)) {
+        !(channel.users.some((user) => user._id == request.user._id)) &&
+        !(user.isAdmin)) {
         const msg = 'The user cannot add members to this channel';
         return response.status(403).send(msg);
       }
@@ -210,8 +217,9 @@ router.patch('/:channelName/workspace/:workspaceName/users', auth,
       const channel = request.channel;
       const workspace = request.workspace;
 
+      const user = await User.findById(request.user._id);
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id)) {
+          (channel.creator != request.user._id) && !(user.isAdmin)) {
         const msg = 'The user cannot remove members of this channel.';
         return response.status(403).send(msg);
       }
@@ -235,8 +243,9 @@ router.delete('/:channelName/workspace/:workspaceName', [auth],
       const workspace = request.workspace;
       const channel = request.channel;
 
+      const user = await User.findById(request.user._id);
       if (!workspace.admins.some((userId) => userId == request.user._id) &&
-               (channel.creator != request.user._id)) {
+          (channel.creator != request.user._id) && !(user.isAdmin)) {
         const msg = `You cannot delete ${channel.name} channel`;
         return response.status(403).send(msg);
       }
