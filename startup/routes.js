@@ -9,6 +9,7 @@ const error = require('../middleware/error');
 const swaggerUi = require('swagger-ui-express');
 const read = require('read-yaml');
 const swaggerDocument = read.sync('./swagger.yaml');
+const cors = require('cors');
 
 module.exports = function(app) {
   app.use(express.json());
@@ -20,4 +21,5 @@ module.exports = function(app) {
   app.use('/api/workspaces', workspaces);
   app.use('/api/channels', channels);
   app.use(error);
+  app.user(cors);
 };
