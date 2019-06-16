@@ -13,6 +13,7 @@ const swaggerDocument = read.sync('./swagger.yaml');
 const cors = require('cors');
 
 module.exports = function(app) {
+  app.use(cors);
   app.use(express.json());
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
   app.use('/', rootFile);
@@ -23,5 +24,4 @@ module.exports = function(app) {
   app.use('/api/workspaces', workspaces);
   app.use('/api/channels', channels);
   app.use(error);
-  app.use(cors);
 };
