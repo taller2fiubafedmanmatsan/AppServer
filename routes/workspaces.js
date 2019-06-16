@@ -10,16 +10,12 @@ const {
 const {Channel} = require('../models/channel');
 const {Page} = require('../models/page');
 const {Message} = require('../models/message');
-
-// feat-bot const {User, validateBot} = require('../models/user');
 const {User} = require('../models/user');
 const _ = require('lodash');
 const Fawn = require('fawn');
 const mongoose = require('mongoose');
 const router = express.Router();
 const firebase = require('../helpers/firebase_helper');
-
-/* Nuevo feature-bots*/
 const {Bot, validateBot} = require('../models/bot');
 
 Fawn.init(mongoose);
@@ -29,9 +25,7 @@ router.get('/:wsname', auth, async (request, response) => {
       .populate('creator', 'name email')
       .populate('admins', 'name email')
       .populate('users', 'name email')
-      .populate({path: 'channels', populate: {path: 'users', select: 'email'},
-        select: ['users', 'name', 'channelType']});
-
+      .populate('channels', 'name');
   if (!workspace) return response.status(404).send('Workspace not found.');
 
   response.status(200).send(_.pick(workspace, [
@@ -97,29 +91,27 @@ router.post('/:wsname/bots', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+  const user = await User.findById(request.user._id);
+  if (!(workspace.admins.some((userId) => userId == request.user._id)) &&
+        !user.isAdmin) {
     const msg = `You have no permissions to add bots to ${workspace.name}`;
     return response.status(403).send(msg);
   }
 
   const {name} = request.body;
-  // feat-bot let bot = await User.findOne({name: name});
   let bot = await Bot.findOne({name: name});
   if (bot) return response.status(400).send('Name already taken.');
 
   request.body.workspaces = [workspace._id];
-  // feat-bot bot = new User(_.pick(request.body,
   bot = new Bot(_.pick(request.body,
       [
         'name', 'url', 'workspaces'
       ]
   ));
 
-  // feat-bot workspace.users.push(bot);
   workspace.bots.push(bot);
   const channels = workspace.channels;
   channels.forEach((channel)=> {
-    // feat-bot channel.users.push(bot);
     channels.bots.push(bot);
   });
 
@@ -158,7 +150,8 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (request.user._id != workspace.creator) {
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator) && !(user.isAdmin)) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -201,7 +194,9 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
       .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
-  if (request.user._id != workspace.creator._id) {
+
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator._id) && !(user.isAdmin)) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -233,7 +228,9 @@ router.patch('/:wsname/addUsers', auth,
           .populate('users');
       if (!workspace) return response.status(404).send('Workspace not found.');
 
-      if (!workspace.admins.some((userId) => userId == request.user._id)) {
+      const user = await User.findById(request.user._id);
+      if (!(workspace.admins.some((userId) => userId == request.user._id)) &&
+            !user.isAdmin) {
         const msg = `You have no permissions to modify ${workspace.name}`;
         return response.status(403).send(msg);
       }
@@ -267,7 +264,9 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+  const user = await User.findById(request.user._id);
+  if (!workspace.admins.some((userId) => userId == request.user._id) &&
+      !user.isAdmin) {
     const msg = `You have no permissions to modify ${workspace.name}`;
     return response.status(403).send(msg);
   }
@@ -310,7 +309,8 @@ router.patch('/:wsname/fields', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (request.user._id != workspace.creator) {
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator) && !user.isAdmin) {
     const msg = `You cannot modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -334,21 +334,20 @@ router.delete('/:wsname', [auth],
 
       if (!workspace) return response.status(404).send('Invalid workspace.');
 
-      if (request.user._id != workspace.creator) {
+      const user = await User.findById(request.user._id);
+      if ((request.user._id != workspace.creator) && !user.isAdmin) {
         const msg = `You cannot delete ${workspace.name} workspace`;
         return response.status(403).send(msg);
       }
 
       const users = workspace.users;
-      const bots = workspace.bots; // feat-bot nuevo
+      const bots = workspace.bots;
       const channels = workspace.channels;
 
       users.forEach(async (user) => {
         await unsubscribeFromChannels(user, channels);
       });
 
-      /* feat-bot if (!await finishedDeletionTransaction(workspace,
-       channels, users)) {*/
       if (!await finishedDeletionTransaction(workspace, channels,
           users, bots)) {
         return response.status(500).send(error);
@@ -391,8 +390,6 @@ async function finishedUsersUpdateTransaction(workspace, users) {
   }
 }
 
-/* feat-bot async function finishedDeletionTransaction(workspace,
-    channels, users) {*/
 async function finishedDeletionTransaction(workspace, channels, users, bots) {
   transaction = new Transaction();
   users.forEach((user) => {
@@ -433,7 +430,6 @@ async function finishedDeletionTransaction(workspace, channels, users, bots) {
 
 async function finishedBotCreation(workspace, channels, bot) {
   transaction = new Transaction();
-  // feat-bot transaction.insert(User.modelName, bot);
   transaction.insert(Bot.modelName, bot);
   transaction.update(Workspace.modelName, workspace._id, workspace);
   channels.forEach((channel) => {
