@@ -23,5 +23,5 @@ module.exports = function(app) {
   app.use('/api/workspaces', workspaces);
   app.use('/api/channels', channels);
   app.use(error);
-  app.user(cors);
+  app.use(cors);
 };
