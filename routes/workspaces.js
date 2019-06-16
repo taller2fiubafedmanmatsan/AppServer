@@ -91,7 +91,9 @@ router.post('/:wsname/bots', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+  const user = await User.findById(request.user._id);
+  if (!(workspace.admins.some((userId) => userId == request.user._id)) &&
+        !user.isAdmin) {
     const msg = `You have no permissions to add bots to ${workspace.name}`;
     return response.status(403).send(msg);
   }
@@ -148,7 +150,8 @@ router.patch('/:wsname/addAdmins', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (request.user._id != workspace.creator) {
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator) && !(user.isAdmin)) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -191,7 +194,9 @@ router.patch('/:wsname/removeAdmins', auth, async (request, response) => {
       .populate('creator', 'email');
 
   if (!workspace) return response.status(404).send('Workspace not found.');
-  if (request.user._id != workspace.creator._id) {
+
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator._id) && !(user.isAdmin)) {
     const msg = `You have no permissions to modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -223,7 +228,9 @@ router.patch('/:wsname/addUsers', auth,
           .populate('users');
       if (!workspace) return response.status(404).send('Workspace not found.');
 
-      if (!workspace.admins.some((userId) => userId == request.user._id)) {
+      const user = await User.findById(request.user._id);
+      if (!(workspace.admins.some((userId) => userId == request.user._id)) &&
+            !user.isAdmin) {
         const msg = `You have no permissions to modify ${workspace.name}`;
         return response.status(403).send(msg);
       }
@@ -257,7 +264,9 @@ router.patch('/:wsname/removeUsers', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (!workspace.admins.some((userId) => userId == request.user._id)) {
+  const user = await User.findById(request.user._id);
+  if (!workspace.admins.some((userId) => userId == request.user._id) &&
+      !user.isAdmin) {
     const msg = `You have no permissions to modify ${workspace.name}`;
     return response.status(403).send(msg);
   }
@@ -300,7 +309,8 @@ router.patch('/:wsname/fields', auth, async (request, response) => {
 
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  if (request.user._id != workspace.creator) {
+  const user = await User.findById(request.user._id);
+  if ((request.user._id != workspace.creator) && !user.isAdmin) {
     const msg = `You cannot modify ${workspace.name} workspace`;
     return response.status(403).send(msg);
   }
@@ -324,7 +334,8 @@ router.delete('/:wsname', [auth],
 
       if (!workspace) return response.status(404).send('Invalid workspace.');
 
-      if (request.user._id != workspace.creator) {
+      const user = await User.findById(request.user._id);
+      if ((request.user._id != workspace.creator) && !user.isAdmin) {
         const msg = `You cannot delete ${workspace.name} workspace`;
         return response.status(403).send(msg);
       }
