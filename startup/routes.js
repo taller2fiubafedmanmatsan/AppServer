@@ -10,6 +10,7 @@ const swaggerUi = require('swagger-ui-express');
 const oauth = require('../routes/oauth');
 const read = require('read-yaml');
 const swaggerDocument = read.sync('./swagger.yaml');
+const cors = require('cors');
 
 module.exports = function(app) {
   app.use(express.json());
@@ -22,4 +23,5 @@ module.exports = function(app) {
   app.use('/api/workspaces', workspaces);
   app.use('/api/channels', channels);
   app.use(error);
+  app.user(cors);
 };
