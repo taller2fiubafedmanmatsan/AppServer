@@ -15,7 +15,6 @@ describe('/api/users', ()=> {
   });
 
   afterEach(async ()=> {
-    await User.remove({});
     await server.close();
   });
 
@@ -55,6 +54,66 @@ describe('/api/users', ()=> {
       expect(response.status).toBe(200);
       expect(response.body.name).toBe(name);
       expect(response.body.email).toBe(email);
+    });
+  });
+
+  describe('GET /', () => {
+    let name;
+    let email;
+    let password;
+    let adminStatus = false;
+    let user;
+    let admin;
+    let token;
+    let adminToken;
+
+    const createUser = ()=> {
+      return request(server)
+          .post('/api/users')
+          .send({name: name, email: email, password: password,
+            isAdmin: adminStatus});
+    };
+
+    beforeAll(async ()=> {
+      name = 'name';
+      email = 'test@test.com';
+      password = 'password';
+      await createUser();
+      user = await User.findOne({name});
+      token = user.getAuthToken();
+      name = 'name 2';
+      email = 'test2@test.com';
+      password = '123456';
+      adminStatus = true;
+      await createUser();
+      admin = await User.findOne({name});
+      adminToken = admin.getAuthToken();
+    });
+
+    afterAll(async ()=> {
+      await User.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .get('/api/users/')
+          .set('x-auth-token', token);
+    };
+
+    it('should return every user', async () => {
+      const response = await execute(adminToken);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 401 if non-admin user make the request', async () => {
+      console.log(token);
+      console.log(user);
+      const response = await execute(token);
+
+      expect(response.status).toBe(401);
+      const msg = 'You have no permissions to perform this action.';
+      expect(response.text).toEqual(msg);
     });
   });
 
