@@ -41,7 +41,8 @@ router.get('/:wsname', auth, async (request, response) => {
       .populate('creator', 'name email')
       .populate('admins', 'name email')
       .populate('users', 'name email')
-      .populate('channels', 'name');
+      .populate({path: 'channels', populate: {path: 'users', select: 'email'},
+        select: ['users', 'name', 'channelType']});
   if (!workspace) return response.status(404).send('Workspace not found.');
 
   response.status(200).send(_.pick(workspace, [
