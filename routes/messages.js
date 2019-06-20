@@ -18,7 +18,7 @@ const {Bot} = require('../models/bot');
 
 router.param('workspaceName', async (request, response, next, elementId) => {
   const workspace = await Workspace.findOne({name: elementId})
-      .populate('channels', '-__v');
+      .populate('channels users', '-__v');
   if (!workspace) return response.status(404).send('Invalid workspace.');
 
   if (request.params.channelName) {
@@ -115,20 +115,19 @@ router.post('/workspace/:workspaceName/channel/:channelName', auth,
         page.messages.push(message);
       }
 
+      const sender = await User.findById(request.user._id);
+      await mentionsHandler.handleMentions(workspace, channel, message, sender);
       if (!finishedCreationTransaction(channel, page, message)) {
         return response.status(500).send('Transaction could not be completed');
       }
-
-      const sender = await User.findById(request.user._id); // Distinta
 
       await sendMessageToTopic(sender, workspace, channel, message);
       const resObj = {
         message: _.pick(message, ['_id', 'text', 'dateTime',
           'creator', 'type']),
         name: sender.name,
-        photoUrl: sender.photoUrl // Distinta
+        photoUrl: sender.photoUrl
       };
-      await mentionsHandler.handleMentions(workspace, channel, message, sender);
       return response.status(200).send(resObj);
     });
 
@@ -137,6 +136,10 @@ async function finishedCreationTransaction(channel, page, message) {
   transaction.update(Channel.modelName, channel._id, channel);
   transaction.insert(Message.modelName, message);
   transaction.insert(Page.modelName, page);
+  channel.users.forEach((user) => {
+    transaction.update(User.modelName, user._id, user);
+  });
+
   try {
     await transaction.run();
     return true;
