@@ -25,6 +25,7 @@ module.exports = function(passport) {
       nickname: profile.displayName,
       photoUrl: profile.photos[0].value
     });
+    console.log(profile);
     await newUser.save();
     done(null, newUser);
   }));
