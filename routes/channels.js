@@ -63,6 +63,7 @@ router.get('/:channelName/workspace/:workspaceName', auth,
     });
 
 router.get('/workspace/:workspaceName', auth, async (request, response) => {
+  const user = await User.findById(request.user._id);
   let userChannels;
   if (!user.isAdmin) {
     userChannels = request.workspace.channels.filter((ch) => {
