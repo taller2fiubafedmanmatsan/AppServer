@@ -15,19 +15,24 @@ describe('/api/channels', ()=> {
   const nonMemberUserEmail = 'nonMemberUser@test.com';
   const adminUserEmail = 'admin@test.com';
   const memberUserEmail = 'member@test.com';
+  const adminEmail = 'admin@admin.com';
   let user;
   let nonMemberUser;
   let adminToken;
   let memberToken;
+  let superAdminToken;
   let admin;
   let member;
   let workspace;
   let workspaceName;
+  let adminUser;
+  let adminStatus = false;
 
   const createUser = (userEmail)=> {
     return request(server)
         .post('/api/users')
-        .send({name: 'name', email: userEmail, password: 'password'});
+        .send({name: 'name', email: userEmail, password: 'password',
+          isAdmin: adminStatus});
   };
 
   const createWorkspace = (name, creator, admins, users)=> {
@@ -57,6 +62,11 @@ describe('/api/channels', ()=> {
     await createUser(memberUserEmail);
     member = await User.findOne({email: memberUserEmail});
     memberToken = member.getAuthToken();
+
+    adminStatus = true;
+    await createUser(adminEmail);
+    adminUser = await User.findOne({email: adminEmail});
+    superAdminToken = adminUser.getAuthToken();
 
     await createWorkspace('WSname', userEmail,
         [userEmail, adminUserEmail],
@@ -121,6 +131,18 @@ describe('/api/channels', ()=> {
 
     it('should return new channel if request is valid', async ()=> {
       const response = await execute(token);
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'name', 'welcomeMessage', 'description', 'isPrivate'
+          ])
+      );
+      expect(botHelper.addTitoTo).toHaveBeenCalled();
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
+    });
+
+    it('should let an admin create a new channel', async ()=> {
+      const response = await execute(superAdminToken);
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
           expect.arrayContaining([
@@ -242,6 +264,18 @@ describe('/api/channels', ()=> {
 
     it('should return the channel is request is valid', async () => {
       const response = await execute(token);
+
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining([
+            '_id', 'name', 'welcomeMessage', 'description', 'users',
+            'isPrivate', 'creator'
+          ])
+      );
+    });
+
+    it('should let an admin get a channel messages', async () => {
+      const response = await execute(superAdminToken);
 
       expect(response.status).toBe(200);
       expect(Object.keys(response.body)).toEqual(
@@ -375,6 +409,22 @@ describe('/api/channels', ()=> {
       expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
+    it('should let admin add the new users to the channel', async () => {
+      users = [user2.email, user3.email];
+      const response = await execute(superAdminToken);
+
+      const updatedChannel = await Channel.findOne({name: myChannel.name})
+          .populate('users', 'email');
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedChannel.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.arrayContaining(users));
+      expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
+    });
+
     it(`should return 403 if user doesn't belong to the channel`, async () => {
       const response = await execute(nonMemberToken);
 
@@ -476,6 +526,22 @@ describe('/api/channels', ()=> {
       expect(usersEmails).toEqual(expect.not.arrayContaining(users));
     });
 
+    it('should let super admin remove user 2 and 3', async () => {
+      users = [user2.email, user3.email];
+      const response = await execute(superAdminToken);
+
+      const updatedChannel = await Channel.findOne({name: myChannel.name})
+          .populate('users', 'email');
+
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedChannel.users.map((user) => {
+        return user.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.not.arrayContaining(users));
+    });
+
     it(`should return 403 if user doesn't belong to the channel`, async () => {
       const response = await execute(nonMemberToken);
 
@@ -558,6 +624,21 @@ describe('/api/channels', ()=> {
       isPrivate = false;
       name = 'Creator name';
       const response = await execute(adminToken);
+
+      const updatedChannel = await Channel.findOne({name: name});
+      expect(updatedChannel.name).toEqual(name);
+      expect(updatedChannel.description).toEqual(description);
+      expect(updatedChannel.isPrivate).toBe(false);
+      expect(updatedChannel.welcomeMessage).toEqual(welcomeMessage);
+      expect(response.status).toBe(200);
+    });
+
+    it('should let super admin change channel fields', async () => {
+      welcomeMessage = 'Super admin welcome message';
+      description = 'Super admin description';
+      isPrivate = false;
+      name = 'Super admin name';
+      const response = await execute(superAdminToken);
 
       const updatedChannel = await Channel.findOne({name: name});
       expect(updatedChannel.name).toEqual(name);
@@ -696,6 +777,13 @@ describe('/api/channels', ()=> {
 
     it('should let the admin delete the channel', async () => {
       const response = await execute(adminToken);
+
+      expect(await Channel.findOne({name: name})).toBe(null);
+      expect(response.status).toBe(200);
+    });
+
+    it('should let super admin delete the channel', async () => {
+      const response = await execute(superAdminToken);
 
       expect(await Channel.findOne({name: name})).toBe(null);
       expect(response.status).toBe(200);

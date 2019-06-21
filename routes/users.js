@@ -29,6 +29,19 @@ router.get('/:userEmail', auth, async (request, response) => {
   return response.status(200).send(user);
 });
 
+router.get('/', auth, async (request, response) => {
+  const user = await User.findById(request.user._id);
+  console.log(user);
+  if (!user.isAdmin) {
+    const msg = `You have no permissions to perform this action.`;
+    return response.status(401).send(msg);
+  }
+
+  const users = await User.find({})
+      .select('-__v -password -topics -workspaces -fireBaseToken');
+  response.status(200).send(users);
+});
+
 router.post('/', async (request, response) => {
   const {error} = validate(request.body);
   if (error) return response.status(400).send(error.details[0].message);

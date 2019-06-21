@@ -10,17 +10,22 @@ describe('/api/workspaces', ()=> {
   let token;
   let secondToken;
   let thirdToken;
+  let adminToken;
   const userEmail = 'user@test.com';
   const secondUserEmail = 'seconduser@test.com';
   const thirdUserEmail = 'thirduser@test.com';
+  const adminUserEmail = 'admin@admin.com';
   let user;
   let secondUser;
   let thirdUser;
+  let adminUser;
+  let adminStatus = false;
 
   const createUser = (userEmail)=> {
     return request(server)
         .post('/api/users')
-        .send({name: 'name', email: userEmail, password: 'password'});
+        .send({name: 'name', email: userEmail, password: 'password',
+          isAdmin: adminStatus});
   };
 
   beforeAll(async ()=> {
@@ -34,12 +39,60 @@ describe('/api/workspaces', ()=> {
     await createUser(thirdUserEmail);
     thirdUser = await User.findOne({email: thirdUserEmail});
     thirdToken = thirdUser.getAuthToken();
+    adminStatus = true;
+    await createUser(adminUserEmail);
+    adminUser = await User.findOne({email: adminUserEmail});
+    adminToken = adminUser.getAuthToken();
   });
 
   afterAll(async ()=> {
     await User.remove({});
     await Bot.remove({});
     await server.close();
+  });
+
+
+  describe('GET /', () => {
+    const name = 'WSname';
+    const creator = userEmail;
+    const users = [userEmail];
+    const admins = [userEmail];
+    const description = 'a';
+    const welcomeMessage = 'a';
+
+    beforeAll(async ()=> {
+      await request(server)
+          .post('/api/workspaces')
+          .set('x-auth-token', token)
+          .send({
+            name, creator, users, admins,
+            description, welcomeMessage
+          });
+    });
+
+    afterAll(async ()=> {
+      await Workspace.remove({});
+    });
+
+    const execute = (token)=> {
+      return request(server)
+          .get('/api/workspaces/')
+          .set('x-auth-token', token);
+    };
+
+    it('should return every workspace', async () => {
+      const response = await execute(adminToken);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 401 if non-admin user make the request', async () => {
+      const response = await execute(token);
+
+      expect(response.status).toBe(401);
+      const msg = 'You have no permissions to perform this action.';
+      expect(response.text).toEqual(msg);
+    });
   });
 
   describe('GET /:wsname', () => {
@@ -296,6 +349,25 @@ describe('/api/workspaces', ()=> {
       expect(updatedWorkspace.welcomeMessage).toEqual(welcomeMessage);
     });
 
+    it('should let admin user change channel fields', async () => {
+      name = 'admin name';
+      description = 'admin description';
+      imageUrl = 'https://www.allacronyms.com/127021hipster.png';
+      location = 'admin location';
+      description = 'admin description';
+      welcomeMessage = 'admin messsage';
+
+      const response = await execute(adminToken);
+
+      const updatedWorkspace = await Workspace.
+          findOne({name: name});
+      expect(response.status).toBe(200);
+      expect(updatedWorkspace.name).toEqual(name);
+      expect(updatedWorkspace.description).toEqual(description);
+      expect(updatedWorkspace.location).toEqual(location);
+      expect(updatedWorkspace.welcomeMessage).toEqual(welcomeMessage);
+    });
+
     it('should not let non-owner member change workspace fields', async () => {
       name = 'new name';
       description = 'new description';
@@ -468,6 +540,22 @@ describe('/api/workspaces', ()=> {
       expect(adminsEmails).toEqual(expect.arrayContaining(admins));
     });
 
+    it('should let the admin add admins to a workspace', async () => {
+      admins = [secondUserEmail];
+      const response = await execute(adminToken);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('admins', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'admins']));
+
+      const adminsEmails = updatedWorkspace.admins.map((admin) => {
+        return admin.email;
+      });
+      admins.push(userEmail);
+      expect(adminsEmails).toEqual(expect.arrayContaining(admins));
+    });
+
     it('should not add the same user twice in the admin list', async () => {
       const response = await execute(token);
       const updatedWorkspace = await Workspace.
@@ -544,6 +632,23 @@ describe('/api/workspaces', ()=> {
     it('should remove the second user from admin list', async () => {
       admins = [secondUserEmail];
       const response = await execute(token);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('admins', 'email');
+      expect(response.status).toBe(200);
+      expect(Object.keys(response.body)).toEqual(
+          expect.arrayContaining(['name', 'admins']));
+
+      const adminsEmails = updatedWorkspace.admins.map((admin) => {
+        return admin.email;
+      });
+      admins.push(userEmail);
+      expect(adminsEmails).toEqual(expect.not.arrayContaining(admins));
+      expect(adminsEmails).toEqual(expect.arrayContaining([userEmail]));
+    });
+
+    it('should let admin remove users from admin list', async () => {
+      admins = [secondUserEmail];
+      const response = await execute(adminToken);
       const updatedWorkspace = await Workspace.
           findOne({name: myWorkspace.name}).populate('admins', 'email');
       expect(response.status).toBe(200);
@@ -748,6 +853,21 @@ describe('/api/workspaces', ()=> {
       expect(usersEmails).toEqual(expect.arrayContaining([userEmail]));
     });
 
+    it('should let admin remove users from the workspace', async () => {
+      users = [secondUserEmail];
+      const response = await execute(adminToken);
+      const updatedWorkspace = await Workspace.
+          findOne({name: myWorkspace.name}).populate('users', 'email');
+      expect(response.status).toBe(200);
+
+      const usersEmails = updatedWorkspace.users.map((admin) => {
+        return admin.email;
+      });
+      users.push(userEmail);
+      expect(usersEmails).toEqual(expect.not.arrayContaining(users));
+      expect(usersEmails).toEqual(expect.arrayContaining([userEmail]));
+    });
+
     it('should not allow the removal of the workspace creator', async () => {
       users = [userEmail];
       const response = await execute(token);
@@ -878,6 +998,12 @@ describe('/api/workspaces', ()=> {
 
     it('should return 200 if request is valid', async ()=> {
       const response = await execute(token);
+      expect(response.status).toBe(200);
+    });
+
+    it('should let an admin add a new bot', async ()=> {
+      name = 'bot tito';
+      const response = await execute(adminToken);
       expect(response.status).toBe(200);
     });
 
