@@ -66,11 +66,7 @@ router.get('/workspace/:workspaceName', auth, async (request, response) => {
       if (ch.users.some((u) => u._id == request.user._id)) return ch;
     });
   } else {
-    userChannels = request.workspace.channels
-        .populate('pages', '-__v')
-        .populate('users', 'name nickname email photoUrl topics welcomeMessage')
-        .populate('creator', 'name nickname email')
-        .populate('bots', 'name');
+    userChannels = request.workspace.channels;
   }
 
   response.status(200).send(userChannels);
