@@ -10,8 +10,10 @@ const swaggerUi = require('swagger-ui-express');
 const oauth = require('../routes/oauth');
 const read = require('read-yaml');
 const swaggerDocument = read.sync('./swagger.yaml');
+const cors = require('cors');
 
 module.exports = function(app) {
+  app.use(cors());
   app.use(express.json());
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
   app.use('/', rootFile);
