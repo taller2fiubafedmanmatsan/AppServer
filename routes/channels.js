@@ -76,6 +76,16 @@ router.get('/workspace/:workspaceName', auth, async (request, response) => {
   response.status(200).send(userChannels);
 });
 
+router.get('/:channelName/workspace/:workspaceName/users',
+    auth, async (request, response) => {
+      const user = await User.findById(request.user._id);
+      if (user.isAdmin) {
+        response.status(200).send(request.channel.users);
+      }
+
+      response.status(401);
+    });
+
 router.post('/workspace/:workspaceName', [auth, channelTransform],
     async (request, response) => {
       const fields = [
