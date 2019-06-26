@@ -57,8 +57,8 @@ function sendRequest(workspace, channel, user, message, sender) {
 }
 
 async function sendWelcomeMessage(workspace, channel, users) {
-  // feat-bot const tito = await User.findOne({name: 'Tito'});
   const tito = await Bot.findOne({name: 'Tito'});
+  if (!tito) return;
   users.forEach((user) => {
     const messageData = {
       text: '@Tito welcome',
