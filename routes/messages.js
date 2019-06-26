@@ -50,7 +50,10 @@ router.post('/workspace/:workspaceName/channel/:channelName/bot', auth,
 
       const workspace = request.workspace;
       const channel = request.channel;
-
+      if (!request.channel.bots.some((user) => user._id == request.user._id)) {
+        return response.status(403)
+            .send(`The user doesn't belong to the channel`);
+      }
       const messageData = {
         text: request.body.text,
         creator: request.user._id,

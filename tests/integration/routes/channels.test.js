@@ -130,7 +130,6 @@ describe('/api/channels', ()=> {
             'channelType'
           ])
       );
-      expect(botHelper.addTitoTo).toHaveBeenCalled();
       expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
@@ -144,7 +143,6 @@ describe('/api/channels', ()=> {
             'channelType'
           ])
       );
-      expect(botHelper.addTitoTo).toHaveBeenCalled();
       expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
@@ -158,7 +156,6 @@ describe('/api/channels', ()=> {
             'channelType'
           ])
       );
-      expect(botHelper.addTitoTo).toHaveBeenCalled();
       expect(botHelper.sendWelcomeMessage).toHaveBeenCalled();
     });
 
