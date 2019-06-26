@@ -17,6 +17,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const firebase = require('../helpers/firebase_helper');
 const {Bot, validateBot} = require('../models/bot');
+const botHelper = require('../helpers/bot_helper');
 
 Fawn.init(mongoose);
 
@@ -63,21 +64,19 @@ router.post('/', [auth, usersExist], async (request, response) => {
   const {error} = validate(request.body);
   if (error) return response.status(400).send(error.details[0].message);
 
-  const {name, creator} = request.validWorkspace;
-  let workspace = await Workspace.findOne({name, creator});
+  const fields = [
+    'name', 'imageUrl', 'location', 'creator', 'description',
+    'welcomeMessage', 'channels', 'users', 'admins'
+  ];
 
-  if (workspace) {
+  const {name, creator} = request.validWorkspace;
+  let ws = await Workspace.findOne({name, creator});
+
+  if (ws) {
     return response.status(400).send('Workspace already registered.');
   }
 
-  const ws = request.validWorkspace;
-  ws.creator = request.validWorkspace.creator._id;
-  ws.admins = request.validWorkspace.admins.map((user) => {
-    return user._id;
-  });
-  ws.users = request.validWorkspace.users.map((user) => {
-    return user._id;
-  });
+  ws = new Workspace(_.pick(request.validWorkspace, fields));
 
   if (!ws.admins.includes(ws.creator)) {
     const msg = 'Workspace creator is not included in admins list.';
@@ -88,22 +87,27 @@ router.post('/', [auth, usersExist], async (request, response) => {
     const msg = 'Some admins are not included in the users list.';
     return response.status(400).send(msg);
   }
+  const users = request.validWorkspace.users;
+  users.forEach((user) => {
+    user.workspaces.push(ws._id);
+  });
+  if (!await finishedCreationTransaction(ws, users)) {
+    return response.status(500).send(error);
+  }
+  const msg = _.pick(ws, ['name', 'imageUrl', 'location',
+    'description', 'welcomeMessage', 'channels'
+  ]);
+  msg.creator = ws.creator._id;
+  msg.users = [];
+  msg.admins = [];
+  ws.users.forEach((user) => {
+    msg.users.push(user._id);
+  });
+  ws.admins.forEach((admin) => {
+    msg.admins.push(admin._id);
+  });
 
-  workspace = new Workspace(_.pick(ws,
-      [
-        'name', 'imageUrl', 'location', 'creator', 'description',
-        'welcomeMessage', 'channels', 'users', 'admins'
-      ]
-  ));
-
-  savedWs = await workspace.save();
-  creator.workspaces.push(savedWs._id);
-  await creator.save();
-
-  response.status(200).send(_.pick(workspace, [
-    'name', 'imageUrl', 'location', 'creator', 'description',
-    'welcomeMessage', 'channels', 'users', 'admins'
-  ]));
+  response.status(200).send(msg);
 });
 
 router.post('/:wsname/bots', auth, async (request, response) => {
@@ -380,6 +384,25 @@ router.delete('/:wsname', [auth],
       const resMsg = `Deleted ${workspace.name} successfully`;
       return response.status(200).send(resMsg);
     });
+
+async function finishedCreationTransaction(workspace, users) {
+  transaction = new Transaction();
+  await botHelper.addTitoTo(workspace.bots);
+  transaction.insert(Workspace.modelName, workspace);
+  users.forEach((user) => {
+    transaction.insert(User.modelName, user);
+  });
+
+  try {
+    await transaction.run();
+    return true;
+  }
+  catch (error) {
+    await transaction.rollback();
+    transaction.clean();
+    return false;
+  }
+}
 
 async function finishedJoinTransaction(user, workspace) {
   transaction = new Transaction();

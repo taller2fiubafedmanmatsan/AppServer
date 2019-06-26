@@ -226,11 +226,5 @@ describe('/api/messages', ()=> {
 
       expect(response.status).toBe(400);
     });
-
-    it('should return 403 if the user is not in the channel', async ()=> {
-      const response = await execute(secondToken);
-
-      expect(response.status).toBe(403);
-    });
   });
 });
