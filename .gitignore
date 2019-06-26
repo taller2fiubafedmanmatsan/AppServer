@@ -4,3 +4,4 @@ node_modules/
 errors.log
 /coverage
 .DS_Store
+.env
