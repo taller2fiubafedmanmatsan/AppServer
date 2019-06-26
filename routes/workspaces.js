@@ -51,6 +51,14 @@ router.get('/:wsname', auth, async (request, response) => {
   ]));
 });
 
+router.get('/:wsname/bots', auth, async (request, response) => {
+  const workspace = await Workspace.findOne({name: request.params.wsname})
+      .populate('bots');
+  if (!workspace) return response.status(404).send('Workspace not found.');
+
+  response.status(200).send(_.pick(workspace, ['bots']));
+});
+
 router.post('/', [auth, usersExist], async (request, response) => {
   const {error} = validate(request.body);
   if (error) return response.status(400).send(error.details[0].message);
