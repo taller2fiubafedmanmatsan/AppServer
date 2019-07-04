@@ -141,7 +141,7 @@ router.post('/:wsname/bots', auth, async (request, response) => {
   workspace.bots.push(bot);
   const channels = workspace.channels;
   channels.forEach((channel)=> {
-    channels.bots.push(bot);
+    channel.bots.push(bot);
   });
 
   if (!await finishedBotCreation(workspace, channels, bot)) {
