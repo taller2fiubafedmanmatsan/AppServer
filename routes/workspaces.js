@@ -57,7 +57,7 @@ router.get('/:wsname/bots', auth, async (request, response) => {
       .populate('bots');
   if (!workspace) return response.status(404).send('Workspace not found.');
 
-  response.status(200).send(_.pick(workspace, ['bots']));
+  response.status(200).send(workspace.bots);
 });
 
 router.post('/', [auth, usersExist], async (request, response) => {
