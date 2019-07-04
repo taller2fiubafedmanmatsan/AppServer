@@ -24,7 +24,7 @@ const Bot = mongoose.model('Bot', botSchema, 'bots');
 function validateBot(bot) {
   const schema = {
     name: Joi.string().min(1).max(50).required(),
-    url: Joi.string().trim().uri().required()
+    url: Joi.string().trim().required()
   };
 
   return Joi.validate(bot, schema);
