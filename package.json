@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^3.0.5",
-    "config": "^3.0.1",
+    "config": "^3.3.8",
     "coveralls": "^3.0.3",
     "debug": "^4.1.1",
     "express": "^4.16.4",
